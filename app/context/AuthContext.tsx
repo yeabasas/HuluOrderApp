@@ -40,7 +40,7 @@ export const AuthProvider = ({ children }: any) => {
       }
     }catch(error){
       console.log("ERROR loading token:",error)
-    }};n
+    }};
 
     loadToken(); // Invoke the function
   }, []); // Add the dependency array
