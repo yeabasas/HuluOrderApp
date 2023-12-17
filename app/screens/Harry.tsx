@@ -2,13 +2,12 @@ import {
   View,
   Text,
   StyleSheet,
-  ImageBackground,
-  TextInput,
   ScrollView,
   Button,
   Image,
   Pressable,
   FlatList,
+  Dimensions,
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
@@ -16,17 +15,67 @@ import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from "react-native-responsive-screen";
-const Harry = ({navigation}) => {
+import Header from "../components/Header";
+
+const data = [
+  { key: "A" },
+  { key: "B" },
+  { key: "C" },
+  { key: "D" },
+  { key: "E" },
+  { key: "F" },
+  { key: "G" },
+  { key: "H" },
+  { key: "I" },
+  { key: "J" },
+  // { key: 'K' },
+  // { key: 'L' },
+];
+
+const formatData = (data, numColumns) => {
+  const numberOfFullRows = Math.floor(data.length / numColumns);
+
+  let numberOfElementsLastRow = data.length - numberOfFullRows * numColumns;
+  while (
+    numberOfElementsLastRow !== numColumns &&
+    numberOfElementsLastRow !== 0
+  ) {
+    data.push({ key: `blank-${numberOfElementsLastRow}`, empty: true });
+    numberOfElementsLastRow++;
+  }
+
+  return data;
+};
+
+const numColumns = 2;
+
+const Harry = ({ navigation,onSubmit }) => {
   const { onLogout } = useAuth();
 
   const [rowData, setRowData] = useState([]);
 
+  const renderItem = ({ item, index }) => {
+    if (item.empty === true) {
+      return <View style={[styles.item, styles.itemInvisible]} />;
+    }
+    return (
+      <View style={styles.item}>
+        <Image
+          style={styles.itemsImage}
+          resizeMode="cover"
+          source={require("../assets/622166.jpg")}
+        />
+        <View style={styles.itemBottom}>
+          <Text style={styles.itemText}>{item.key}</Text>
+        </View>
+      </View>
+    );
+  };
+
   useEffect(() => {
-    // Fetch your data from the API
-    // For this example, I'm using a simple array
     const fetchData = async () => {
       try {
-        const response = await fetch('https://dummyjson.com/products');
+        const response = await fetch("https://dummyjson.com/products");
         const data = await response.json();
         setRowData(data);
       } catch (error) {
@@ -37,63 +86,40 @@ const Harry = ({navigation}) => {
     fetchData();
   }, []);
 
-  const renderCell = ({ item }) => (
-    <View style={styles.cell}>
-      <Text>{item.title}</Text>
-    </View>
-  );
-
   return (
     <ScrollView alwaysBounceVertical={true}>
       <View style={styles.container}>
-        <ImageBackground
-          source={require("../assets/hero@2x.png")}
-          resizeMode="cover"
-          style={styles.image}
-        >
-          <View style={styles.header}>
-            <Text style={styles.headerText}>HULU ORDER</Text>
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search"
-            ></TextInput>
-          </View>
-        </ImageBackground>
+        <Header/>
         <View style={styles.category}>
           <ScrollView horizontal>
-            <Pressable onPress={()=>navigation.navigate('Fight')} style={styles.categoryItems}>
-              <Text style={styles.categoryItemsText}>hello</Text>
+            <Pressable
+              onPress={() => navigation.navigate("Login")}
+              style={styles.categoryItems}
+            >
+              <Text style={styles.categoryItemsText}>Login</Text>
             </Pressable>
-            <Pressable style={styles.categoryItems}>
-              <Text style={styles.categoryItemsText}>hello</Text>
+            <Pressable
+            onPress={() => navigation.navigate("Register")}
+            style={styles.categoryItems}>
+              <Text style={styles.categoryItemsText}>Register</Text>
             </Pressable>
-            <Pressable style={styles.categoryItems}>
-              <Text style={styles.categoryItemsText}>hello</Text>
+            <Pressable onPress={() => navigation.navigate("Order")} style={styles.categoryItems}>
+              <Text style={styles.categoryItemsText}>Order</Text>
             </Pressable>
-            <Pressable style={styles.categoryItems}>
-              <Text style={styles.categoryItemsText}>hello</Text>
-            </Pressable>
-            <Pressable style={styles.categoryItems}>
-              <Text style={styles.categoryItemsText}>hello</Text>
+            <Pressable  style={styles.categoryItems}>
+              <Text style={styles.categoryItemsText}>Fight</Text>
             </Pressable>
             <Pressable style={styles.categoryItems}>
               <Text style={styles.categoryItemsText}>hello</Text>
             </Pressable>
           </ScrollView>
         </View>
-        <View style={styles.itemsContainer}>
-          {/* <View style={styles.items}>
-            <Image
-              style={styles.itemsImage}
-              resizeMode="cover"
-              source={require("../assets/hero.png")}
-            />
-          </View> */}
+        <View>
           <FlatList
-            data={rowData}
-            renderItem={renderCell}
-            keyExtractor={(item) => item.id.toString()}
-            numColumns={2} // Number of columns in your grid
+            data={formatData(data, numColumns)}
+            style={styles.container}
+            renderItem={renderItem}
+            numColumns={numColumns}
           />
         </View>
       </View>
@@ -103,55 +129,23 @@ const Harry = ({navigation}) => {
 };
 const styles = StyleSheet.create({
   container: {
-    height: hp(100),
-    marginTop: 20,
-    backgroundColor: "#fff",
-  },
-  cell: {
     flex: 1,
-    margin: 5,
-    borderWidth: 1,
-    borderColor: "black",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  header: {
-    height: hp(20),
-    paddingTop: 10,
-    alignItems: "center",
-    shadowColor: "black",
-  },
-  headerText: {
-    color: "#fff",
-    fontSize: 30,
-    fontWeight: "800",
-  },
-  searchInput: {
-    width: wp(80),
-    marginTop: 20,
     backgroundColor: "#fff",
-    borderRadius: 5,
-    paddingLeft: 20,
-  },
-  image: {
-    height: hp(20),
-    width: wp(100),
-  },
-  searchIcon: {
-    padding: 10,
   },
   category: {
     backgroundColor: "#f4fdf4",
-    height: hp(12),
+    height: 30,
+    marginVertical:10,
+    justifyContent:'center',
+    alignItems:'center'
   },
   categoryItems: {
     flex: 1,
     backgroundColor: "#243b2e",
-    marginBottom: 20,
     justifyContent: "center",
-    margin: 10,
-    height: 50,
-    width: 100,
+    marginHorizontal: 5,
+    height: 30,
+    width: 120,
     alignItems: "center",
   },
   categoryItemsText: {
@@ -165,18 +159,29 @@ const styles = StyleSheet.create({
   cardsText: {
     textAlign: "center",
   },
-  itemsContainer: {
+  item: {
     flex: 1,
-    flexDirection: "column",
+    margin: 10,
+    height: Dimensions.get("window").width / numColumns, // approximate a square
   },
-  items: {
-    width: wp(50),
-    height: hp(30),
-    backgroundColor: "red",
+  itemInvisible: {
+    backgroundColor: "transparent",
+  },
+  itemText: {
+    color: "#fff",
+    marginLeft: 15,
+    height: hp(10),
+  },
+  itemBottom: {
+    backgroundColor: "#243b2e",
+    borderCurve: "circular",
+    borderTopStartRadius: 10,
+    borderTopEndRadius: 10,
+    zIndex: 7,
   },
   itemsImage: {
     height: hp(20),
-    width: wp(40),
+    width: wp(44),
   },
 });
 export default Harry;

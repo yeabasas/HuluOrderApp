@@ -1,4 +1,3 @@
-import { Button, ScrollView } from "react-native";
 import { AuthProvider, useAuth } from "./app/context/AuthContext";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -7,6 +6,10 @@ import Login from "./app/screens/Login";
 import Register from "./app/screens/Register";
 import Harry from "./app/screens/Harry";
 import Fight from "./app/screens/Fight";
+import Sam from "./app/screens/Sam";
+import React, { useState } from "react";
+import Order from "./app/screens/Order";
+import Detail from "./app/screens/Detail";
 
 const Stack = createNativeStackNavigator();
 
@@ -19,8 +22,12 @@ export default function App() {
 }
 
 export const Layout = () => {
-  const { authState, onLogout } = useAuth();
+  const { authState } = useAuth();
+  const [activeForm, setActiveForm] = useState("login");
 
+  const handleFormSwitch = (formType) => {
+    setActiveForm(formType);
+  };
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -32,6 +39,11 @@ export const Layout = () => {
           ></Stack.Screen>
         ) : (
           <>
+            <Stack.Screen
+              name="Fight"
+              component={Fight}
+              screenOptions={{ headerShown: false }}
+            ></Stack.Screen>
             <Stack.Screen
               name="Harry"
               component={Harry}
@@ -48,8 +60,18 @@ export const Layout = () => {
               screenOptions={{ headerShown: false }}
             ></Stack.Screen>
             <Stack.Screen
-              name="Fight"
-              component={Fight}
+              name="Sam"
+              component={Sam}
+              screenOptions={{ headerShown: false }}
+            ></Stack.Screen>
+            <Stack.Screen
+              name="Order"
+              component={Order}
+              screenOptions={{ headerShown: false }}
+            ></Stack.Screen>
+            <Stack.Screen
+              name="Detail"
+              component={Detail}
               screenOptions={{ headerShown: false }}
             ></Stack.Screen>
           </>

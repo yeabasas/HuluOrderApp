@@ -58,7 +58,6 @@ const Login = ({navigation}) => {
         <View style={styles.lower}>
           <Text style={styles.register}>Don't have account?</Text>
           <Text style={styles.registerNow} onPress={()=>navigation.navigate('Register')}>Create now</Text>
-          <Text style={styles.registerNow} onPress={()=>navigation.navigate('Harry')}>Create now</Text>
         </View>
       </View>
     </View>

@@ -1,19 +1,22 @@
 import * as React from "react";
-import { Image, StyleSheet, Text, View, Pressable } from "react-native";
+import { Image, StyleSheet, Text, View, Pressable, Button } from "react-native";
 import {LinearGradient} from "expo-linear-gradient";
 import { FontFamily, Color, FontSize } from "../../GlobalStyles";
 import {
     widthPercentageToDP as wp,
     heightPercentageToDP as hp,
   } from "react-native-responsive-screen";
+import { useAuth } from "../context/AuthContext";
 
 const Home = ({navigation}) => {
+  const { onLogout } = useAuth();
+
   return (
     <View style={styles.cover}>
       <Image
         style={[styles.heroIcon, styles.heroIconPosition]}
         resizeMode="cover"
-        source={require('../assets/hero@2x.png')}
+        source={require('../assets/hero.png')}
       />
       <Text style={styles.orderNowChina}>{`order NOW CHINA  `}</Text>
       <Text style={[styles.connectingChinaTo, styles.embarkOnYourTypo]}>
@@ -44,6 +47,7 @@ const Home = ({navigation}) => {
         />
         <Text style={[styles.getStarted, styles.huluFlexBox]}>Get Started</Text>
       </Pressable>
+      <Button color="#243b2e" onPress={() => onLogout()} title="Sign Out" />
       <Text
         style={[styles.embarkOnYour, styles.getStartedTypo]}
       >{`"Embark on Your Journey Now! Join Us and Let the Adventure Begin!"
