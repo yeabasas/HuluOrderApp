@@ -1,11 +1,27 @@
-import { View, Text, StyleSheet, TextInput, Button, TouchableOpacity } from "react-native";
-import React, { useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  Button,
+  TouchableOpacity,
+} from "react-native";
+import React, { useState, useCallback, useRef } from "react";
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from "react-native-responsive-screen";
-import * as DocumentPicker from 'expo-document-picker';
+import * as DocumentPicker from "expo-document-picker";
+// import SelectDropdown from "react-native-select-dropdown";
+// import Select2 from "react-native-select-two";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
+const countries = ["Egypt", "Canada", "Australia", "Ireland"];
+const mockData = [
+  { id: 1, name: "React Native Developer" }, // set default checked for render option item
+  { id: 2, name: "Android Developer" },
+  { id: 3, name: "iOS Developer" },
+];
 const Phone = () => {
   const [itemName, setItemName] = useState("");
   const [condition, setCondition] = useState("");
@@ -14,88 +30,48 @@ const Phone = () => {
   const [sim, setSim] = useState("");
   const [color, setColor] = useState("");
   const [description, setDescription] = useState("");
+  const [state, setState] = useState("");
 
   const handleSubmit = () => {
     console.log(itemName, condition, storage, ram, sim, color, description);
   };
 
-const docPicker =async () => {
-  try{
-  const doc = await DocumentPicker.getDocumentAsync()
-  console.log(doc.assets.map((e)=>(
-    e.name,e.size
-  )))
-} catch (err) {
-  if ((await DocumentPicker.getDocumentAsync()).canceled) {
-    console.log("error -----", err);
-  } else {
-    throw err;
-  }
-}
-}
-
+  const docPicker = async () => {
+    try {
+      const doc = await DocumentPicker.getDocumentAsync();
+      console.log(doc.assets.map((e) => (e.name, e.size)));
+    } catch (err) {
+      if ((await DocumentPicker.getDocumentAsync()).canceled) {
+        console.log("error -----", err);
+      } else {
+        throw err;
+      }
+    }
+  };
   return (
-    <View style={styles.container}>
-      <View style={styles.main}>
-        <Text style={styles.login}>Phone</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Item Name"
-          onChangeText={(text: string) => setItemName(text)}
-          value={itemName}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Condition"
-          onChangeText={(text: string) => setCondition(text)}
-          value={condition}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Storage"
-          onChangeText={(text: string) => setStorage(text)}
-          value={storage}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Ram"
-          onChangeText={(text: string) => setRam(text)}
-          value={ram}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Sim"
-          onChangeText={(text: string) => setSim(text)}
-          value={sim}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Color"
-          onChangeText={(text: string) => setColor(text)}
-          value={color}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Description"
-          multiline={true}
-          numberOfLines={4}
-          onChangeText={(text: string) => setDescription(text)}
-          value={description}
-        />
-          <TouchableOpacity
-          style={styles.image}
-            onPress={() => docPicker()}
-          >
-            <Text> {"upload  Image"}</Text>
-          </TouchableOpacity>
-        <Button color="#243b2e" title="Submit" onPress={() => handleSubmit()} />
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: "red" }}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: "gray",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <TouchableOpacity>
+          <Text>asdf</Text>
+        </TouchableOpacity>
+        
       </View>
-    </View>
+    </GestureHandlerRootView>
   );
 };
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#fff",
+    flex: 1,
+    backgroundColor: "gray",
+    alignItems: "center",
+    justifyContent: "center",
   },
   header: {
     height: hp(30),
@@ -112,6 +88,9 @@ const styles = StyleSheet.create({
     gap: 10,
     backgroundColor: "#fff",
   },
+  select: {
+    width: "75%",
+  },
   input: {
     height: 44,
     width: wp(70),
@@ -124,12 +103,12 @@ const styles = StyleSheet.create({
     fontSize: 25,
     fontWeight: "900",
   },
-  image:{
-    height:100,
-    width:wp(70),
-    backgroundColor: '#f8f8ff',
-    justifyContent: 'center',
-    alignItems: 'center',
-  }
+  image: {
+    height: 100,
+    width: wp(70),
+    backgroundColor: "#f8f8ff",
+    justifyContent: "center",
+    alignItems: "center",
+  },
 });
 export default Phone;
