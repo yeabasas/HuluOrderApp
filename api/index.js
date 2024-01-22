@@ -2,6 +2,8 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const crypto = require("crypto");
+const multer = require('multer');
+const path = require('path');
 const nodemailer = require("nodemailer");
 
 const app = express();
@@ -29,7 +31,7 @@ mongoose
 const User = require("./models/user");
 const Order = require("./models/order");
 const Items = require("./models/items");
-const Message = require('./models/message')
+const Message = require("./models/message");
 
 const sendVerificationEmail = async (email, verificationToken) => {
   // Create a Nodemailer transporter
@@ -60,20 +62,20 @@ const sendVerificationEmail = async (email, verificationToken) => {
 };
 // Register a new user
 // ... existing imports and setup ...
-app.get("/message",async(req,res)=>{
-  var MongoClient = require('mongodb').MongoClient;
-var url = "mongodb+srv://huluorder:huluorder@cluster0.2vo3ezv.mongodb.net/";
+app.get("/message", async (req, res) => {
+  var MongoClient = require("mongodb").MongoClient;
+  var url = "mongodb+srv://huluorder:huluorder@cluster0.2vo3ezv.mongodb.net/";
 
-MongoClient.connect(url, function(err, db) {
-  if (err) throw err;
-  var dbo = db.db("test");
-  dbo.collection("messages").findOne({}, function(err, result) {
+  MongoClient.connect(url, function (err, db) {
     if (err) throw err;
-    console.log(result.name);
-    db.close();
+    var dbo = db.db("test");
+    dbo.collection("messages").findOne({}, function (err, result) {
+      if (err) throw err;
+      console.log(result.name);
+      db.close();
+    });
   });
 });
-})
 app.post("/register", async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -159,20 +161,21 @@ app.post("/login", async (req, res) => {
     }
 
     //generate a token
-    const token = jwt.sign({ 
-      userId: user._id,
-      }, secretKey);
+    const token = jwt.sign(
+      {
+        userId: user._id,
+      },
+      secretKey
+    );
 
     res.status(200).json({ token });
-    console.log("token", { token });
+    console.log("token", user._id);
   } catch (error) {
     res.status(500).json({ message: "Login Failed" });
   }
 });
 
-// Assuming you have a User model
-
-app.get('/user-details', async (req, res) => {
+app.get("/user-details", async (req, res) => {
   try {
     // Assuming you have middleware to verify the authentication token and set user details in req.user
     const userId = req.user.userId;
@@ -181,7 +184,7 @@ app.get('/user-details', async (req, res) => {
     const userDetails = await User.findById(userId);
 
     if (!userDetails) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
     // Return user details in the response
@@ -190,20 +193,43 @@ app.get('/user-details', async (req, res) => {
       // Add other user details as needed
     });
   } catch (error) {
-    console.error('Error fetching user details:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error("Error fetching user details:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
+const authenticateToken = (req, res, next) => {
+  // Get the authorization header
+  const authHeader = req.headers["authorization"];
+  // Extract the token from the header
+  const token = authHeader && authHeader.split(" ")[1];
 
-app.get("/users/:userId", async (req,res)=>{
+  // If no token is provided, return an unauthorized response
+  if (!token) {
+    console.log("unauthorized");
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  // Verify the token
+  jwt.verify(token, secretKey, (err, user) => {
+    if (err) {
+      // Token is not valid, return an unauthorized response
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    // Token is valid, set user details in req.user
+    req.user = user;
+    next(); // Proceed to the next middleware or route handler
+  });
+};
+app.get("/users/:token", authenticateToken, async (req, res) => {
   // User.find()
   // .then((data)=>res.json(data))
   // .catch(err=>res.send('Error'))
   try {
-    const userId = req.params.userId;
-
-    const user = await User.findById(userId);
+    const decodedToken = req.user;
+    const token = decodedToken.userId;
+    const user = await User.findById(token);
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -213,7 +239,7 @@ app.get("/users/:userId", async (req,res)=>{
   } catch (error) {
     res.status(500).json({ message: "Error retrieving the user profile" });
   }
-})
+});
 
 //endpoint to store a new address to the backend
 app.post("/addresses", async (req, res) => {
@@ -293,45 +319,57 @@ app.post("/orders", async (req, res) => {
 });
 
 //posting items
+const storage = multer.memoryStorage();
+// const upload = multer({ limits : 1000000 });
 
-app.post("/postItem", async (req, res) => {
-  try {
-    const {
-      name,
-      condition,
-      storage,
-      ram,
-      color,
-      sim,
-      processor,
-      description,
-      price,
-    } = req.body;
+// app.post("/postItem",upload.single('PostImages'), async (req, res) => {
+//   console.log('req.image',req.file)
+//   try {
+//     const {
+//       name,
+//       condition,
+//       storage,
+//       ram,
+//       color,
+//       sim,
+//       processor,
+//       description,
+//       price,
+//     } = req.body;
+//     const imageData = req.file.buffer.toString('base64');
+//     const imageUrl = `data:image/jpeg;base64,${imageData}`;
+//     //create an array of product objects from the cart Items
 
-    //create an array of product objects from the cart Items
+//     //create a new Order
+//     const post = new Items({
+//       name: name,
+//       condition: condition,
+//       storage: storage,
+//       ram: ram,
+//       color: color,
+//       sim: sim,
+//       processor: processor,
+//       description: description,
+//       price: price,
+//       imageUrl,
+//     });
 
-    //create a new Order
-    const order = new Items({
-      name: name,
-      condition: condition,
-      storage: storage,
-      ram: ram,
-      color: color,
-      sim: sim,
-      processor: processor,
-      description: description,
-      price: price,
-    });
+//     await post.save();
 
-    await order.save();
+//     res.status(200).json({ message: "Order created successfully!" });
+//   } catch (error) {
+//     console.log("error creating orders", error);
+//     res.status(500).json({ message: "Error creating orders" });
+//   }
+// });
+const uploaded = multer({
+  limits : 1000000
+})
 
-    res.status(200).json({ message: "Order created successfully!" });
-  } catch (error) {
-    console.log("error creating orders", error);
-    res.status(500).json({ message: "Error creating orders" });
-  }
-});
-
+app.post("/schedule/upload",uploaded.single("schedule"),async(req,res)=>{
+  await Order.findOneAndUpdate({fileName : "schedule"},{imageUrl: req.body.filename, file : req.file.buffer},{upsert : true}).exec();
+  res.status(200).send("Schedule uploaded");
+})
 //get the user profile
 app.get("/profile/:userId", async (req, res) => {
   try {
@@ -366,14 +404,51 @@ app.get("/orders/:userId", async (req, res) => {
 });
 
 app.get("/itemss", (req, res) => {
-    Items.find()
-    .then(items=>res.json(items))
-  .catch (error=>res.json(error));
+  Items.find()
+    .then((items) => res.json(items))
+    .catch((error) => res.json(error));
 });
-app.get("/messagee", (req, res) => {
-    Message.find()
-    .then(message=>res.json(message))
-  .catch (error=>res.json(error));
+app.get("/messagee/:token",async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const { message } =
+      req.body;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    //create a new Message
+    const textMessage = new Order({
+      user: userId,
+      text: message,
+    });
+
+    await textMessage.save();
+
+    res.status(200).json({ message: "Order created successfully!" });
+  } catch (error) {
+    console.log("error creating orders", error);
+    res.status(500).json({ message: "Error creating orders" });
+  }
+});
+app.get("/messagee", async (req, res) => {
+  // try {
+  //   const userId = req.params.userId;
+
+  //   const textMessage = await Message.find({ user: userId }).populate("user");
+
+  //   if (!textMessage || textMessage.length === 0) {
+  //     return res.status(404).json({ message: "No message found for this user" });
+  //   }
+
+  //   res.status(200).json(textMessage);
+  // } catch (error) {
+  //   res.status(500).json({ message: "Error" });
+  // }
+  Message.find()
+    .then((items) => res.json(items))
+    .catch((error) => res.json(error));
 });
 /**
  * Main server app
@@ -397,7 +472,6 @@ const io = socketIo(server); //Initialize Socket
 //Enabling JSON parser
 
 //DB Connection
-
 
 /**API Declaration */
 
@@ -431,11 +505,10 @@ const io = socketIo(server); //Initialize Socket
 //     });
 // });
 
-
 //User finder API
 app.get("/find/:id", (req, res) => {
   const user = User.find({ id: req.params.id });
-  user.exec().then(data => {
+  user.exec().then((data) => {
     res.json(data[0]);
   });
 });
@@ -443,7 +516,7 @@ app.get("/find/:id", (req, res) => {
 //Active users finder API
 app.get("/users/active", (req, res) => {
   const users = User.find({ isActive: true });
-  users.exec().then(data => {
+  users.exec().then((data) => {
     res.json(data);
   });
 });
@@ -451,7 +524,7 @@ app.get("/users/active", (req, res) => {
 //Inactive users finder API
 app.get("/users/inactive", (req, res) => {
   const users = User.find({ isActive: false });
-  users.exec().then(data => {
+  users.exec().then((data) => {
     res.json(data);
   });
 });
@@ -506,9 +579,9 @@ var clients = []; //connected clients
 
 //Messages Socket
 const chatSocket = io.of("/chatsocket");
-chatSocket.on("connection", function(socket) {
+chatSocket.on("connection", function (socket) {
   //On new message
-  socket.on("newMessage", data => {
+  socket.on("newMessage", (data) => {
     //Notify the room
     socket.broadcast.emit("incommingMessage", "reload");
   });
@@ -524,9 +597,8 @@ chatSocket.on("connection", function(socket) {
 //Let the server to listen
 // server.listen(port, () => console.log(`Listening on port ${port}`));
 
-
 // server.js
-const passport = require('passport');
+const passport = require("passport");
 
 // Connect to MongoDB
 
@@ -536,28 +608,134 @@ const passport = require('passport');
 
 // Routes
 // app.use('/api/users', require('./routes/users'));
-app.use('/api/messages', require('./routes/messages'));
+app.use("/api/messages", require("./routes/messages"));
 
 // Socket.io
-io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
+const authenticateTokenn = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
 
-  socket.on('send_chat', async (data) => {
-    console.log('Received message:', data);
-    const message = new Message({ text: `${data}` });
+  if (!token) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  jwt.verify(token, secretKey, (err, user) => {
+    if (err) {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+
+    req.user = user; // Set user details in req.user
+    next();
+  });
+};
+
+io.on("connection", (socket) => {
+  console.log("User connected:", socket.id);
+
+  socket.on("send_chat", async (data,userId) => {
+    console.log("Received message:", data);
+
     
+    const message = new Message({
+      userId:`${userId}`,
+      text: `${data}`,
+    });
+
     try {
-      // Save the message to MongoDB
       await message.save();
-      
-      io.emit('send_chat', data);
-      // Broadcast the message to all connected clients
+
+      io.emit("send_chat", { userId, text: data });
     } catch (error) {
-      console.error('Error saving message:', error);
+      console.error("Error saving message:", error);
     }
   });
 
   // Other event handlers...
 });
+
+
 // Start server
 server.listen(port, () => console.log(`Server running on port ${port}`));
+
+
+
+
+app.put('/updatePassword/:token',authenticateToken, async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+  // const token = req.headers.authorization.split(' ')[1]; // Extracting the token from headers
+  const decodedToken = req.user;
+    const token = decodedToken.userId;
+  // const decodedToken = jwt.verify(token, 'authToken');
+  const userEmail = decodedToken.email; // Adjust this based on your token payload
+
+  try {
+    const user = await User.findOne({ email: userEmail });
+    // Fetch the user from the database using the token
+    // const user = await User.findById(token);
+    console.log('user',user);
+    // Check if the provided old password matches the stored hashed password
+    if(oldPassword !== user.password) {
+      return res.status(400).json({ success: false, message: 'Old password is incorrect' });
+    }
+
+    // Update the user's password in the database
+    user.password = newPassword; // For simplicity, assuming newPassword is already hashed
+    await user.save();
+
+    res.json({ success: true, message: 'Password updated successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const imageSchema = new mongoose.Schema({
+  name: {type: String, required: true, unique: true},
+  data: {type: Buffer, required: true},
+  contentType: {type: String, required: true},
+});
+
+const Image = mongoose.model('Image', imageSchema);
+
+
+const upload = multer();
+
+app.post('/images', upload.single('image'), async (req, res, next) => {
+    if (!req.file) {
+      return res.status(400).json({success: false, message: 'No file provided.'});
+    }
+    const image = new Image({
+      name: `${uuidv4()}.${req.file.mimetype.split('/')[1]}`,
+      data: req.file.buffer,
+      contentType: req.file.mimetype,
+    });
+
+    try {
+      await image.save();
+      console.log('image saved',image.name)
+    } catch (error) {
+      console.log(error);
+      return res.status(400).json({success: false, message: error.message});
+    }
+    return res.status(201).json({
+        success: true,
+        message: 'Image created successfully.',
+        imageName: image.name,
+      });
+  },
+);

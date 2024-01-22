@@ -5,6 +5,7 @@ import {
   TextInput,
   StyleSheet,
   Pressable,
+  Image,
 } from "react-native";
 import React from "react";
 import {
@@ -21,12 +22,19 @@ const Header = () => {
       resizeMode="cover"
       style={styles.image}
     >
-      <StatusBar style="light"/>
+      <StatusBar style="light" />
       <View style={styles.header}>
-        <Text style={styles.headerText}>HULU ORDER</Text>
+        <View style={{ display: "flex", flexDirection: "row" }}>
+          <Image
+            style={styles.itemsImage}
+            resizeMode="contain"
+            source={require("../assets/lo.png")}
+          />
+          <Text style={styles.headerText}>HULU ORDER</Text>
+        </View>
         <Pressable style={styles.searchInput}>
           <AntDesign
-            style={{ paddingTop:4,paddingRight:5 }}
+            style={{ paddingTop: 4, paddingRight: 5 }}
             name="search1"
             size={20}
             color="gray"
@@ -40,26 +48,32 @@ const Header = () => {
 const styles = StyleSheet.create({
   header: {
     height: hp(20),
-    paddingTop: 10,
     alignItems: "center",
     shadowColor: "black",
+  },
+  itemsImage: {
+    height: hp(10),
+    width: wp(10),
+    resizeMode: "contain",
   },
   headerText: {
     color: "#fff",
     fontSize: 30,
     fontWeight: "800",
+    justifyContent: "center",
+    alignSelf: "flex-end",
+    marginLeft: 10,
+    marginBottom: 7,
   },
   searchInput: {
     width: wp(80),
-    marginTop: 20,
     backgroundColor: "#fff",
     borderRadius: 5,
     paddingLeft: 20,
-    display: 'flex',
-    flexDirection:'row',
-    alignItems:'flex-start',
-    justifyContent:"flex-start",
-
+    display: "flex",
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "flex-start",
   },
   image: {
     paddingTop: 20,

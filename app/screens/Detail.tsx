@@ -1,4 +1,12 @@
-import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Pressable,
+  Image,
+  ImageBackground,
+} from "react-native";
 import React, { useEffect, useState } from "react";
 import Header from "../components/Header";
 import {
@@ -9,47 +17,30 @@ import { useDispatch, useSelector } from "react-redux";
 import { addToCart } from "../../redux/CartReducer";
 import { AntDesign } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import HeaderSimp from "../components/HeaderSimp";
 
 const Detail = () => {
   const route = useRoute();
   const navigation: any = useNavigation();
-  const [addedToCart, setAddedToCart] = useState(false);
-  const dispatch = useDispatch();
-  const addItemToCart = (item: any) => {
-    setAddedToCart(true);
-    dispatch(addToCart(item));
-    setTimeout(() => {
-      setAddedToCart(false);
-    }, 60000);
-  };
 
   return (
     <ScrollView alwaysBounceVertical={true}>
-      <Header />
+      <HeaderSimp />
       <>
         <View style={styles.itemNameCon}>
           <Text style={styles.itemName}>{route?.params["name"]}</Text>
-          <Pressable
-            style={styles.cart}
-            onPress={() => {
-              navigation.navigate("CartScreen", {
-                id: route?.params["_id"],
-                price: route?.params["price"],
-                name: route?.params["name"],
-                condition: route?.params["condition"],
-                storage: route?.params["storage"],
-                sim: route?.params["sim"],
-                ram: route?.params["ram"],
-                description: route?.params["description"],
-                color: route?.params["color"],
-                item: route?.params["item"],
-              });
-            }}
-          >
-            <AntDesign name="shoppingcart" size={24} color="black" />
-          </Pressable>
         </View>
-        <View style={styles.ImageCon}></View>
+        <View style={styles.ImageCon}>
+          <Image
+            source={require("../assets/622166.jpg")}
+            style={{
+              flex: 1,
+              width: null,
+              height: null,
+              resizeMode: "contain",
+            }}
+          />
+        </View>
         <View style={styles.detail}>
           <View style={styles.detailHead}>
             <Text style={{ ...styles.price, marginTop: hp("5%") }}>
@@ -61,38 +52,26 @@ const Detail = () => {
           </View>
           <View style={styles.descriptionCon}>
             <>
-              <View style={styles.descriptionDet}>
-                <View>
-                  <Text style={styles.description}>
+              <View style={styles.table}>
+                <View style={styles.tableRow}>
+                  <Text style={styles.cell}>
                     Storage: {route?.params["storage"]}
                   </Text>
-                  <Text style={styles.description}>
+                  <Text style={styles.cell}>
                     Condition: {route?.params["condition"]}
                   </Text>
                 </View>
-                <View>
-                  <Text style={styles.description}>
-                    Sim: {route?.params["sim"]}
-                  </Text>
-                  <Text style={styles.description}>
-                    Ram: {route?.params["ram"]}
+                <View style={styles.tableRow}>
+                  <Text style={styles.cell}>Sim: {route?.params["sim"]}</Text>
+                  <Text style={styles.cell}>Ram: {route?.params["ram"]}</Text>
+                </View>
+                <View style={styles.tableRow}>
+                  <Text style={styles.cellDes}>
+                    Description: {route?.params["description"]}
                   </Text>
                 </View>
               </View>
-              <Text style={styles.description}>
-                Description: {route?.params["description"]}
-              </Text>
             </>
-            <Pressable
-              style={styles.Button}
-              onPress={() => addItemToCart(route?.params["item"])}
-            >
-              {addedToCart ? (
-                <Text style={styles.BtnTxt}>Added To Cart</Text>
-              ) : (
-                <Text style={styles.BtnTxt}>Add To Cart</Text>
-              )}
-            </Pressable>
           </View>
         </View>
       </>
@@ -116,8 +95,11 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   ImageCon: {
-    alignItems: "center",
-    marginTop: hp("5%"),
+    flex: 1,
+    width: wp(90),
+    height: hp(30),
+    // backgroundColor: "#fff",
+    margin: 10,
   },
   Image: {
     height: hp(30),
@@ -185,6 +167,26 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     fontWeight: "700",
     fontSize: 20,
+  },
+  table: {
+    margin: 10,
+  },
+  tableRow: {
+    flexDirection: "row",
+  },
+  cell: {
+    flex: 1,
+    color:'#fff',
+    padding: 10,
+    textAlign: "left",
+    paddingLeft:20,
+  },
+  cellDes: {
+    flex: 1,
+    color:'#fff',
+    padding: 10,
+    textAlign: "left",
+    paddingLeft:20,
   },
 });
 

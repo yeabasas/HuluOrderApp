@@ -7,7 +7,7 @@ import {
   Alert,
   ScrollView,
 } from "react-native";
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import {
   widthPercentageToDP as wp,
@@ -16,59 +16,35 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { UserType } from "../../UserContext";
 
-const Login =  () => {
+const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(true); // Added loading state
   const navigation: any = useNavigation();
-  const {onLogin,onRegister} = useAuth();
+  const { onLogin, onRegister } = useAuth();
 
-  const login = async () =>{
-    const result = await onLogin!(email,password);
-    if(result&&result.error){
-      alert(result.msg)
+  const login = async () => {
+    const result = await onLogin!(email, password);
+    if (result && result.error) {
+      alert(result.msg);
     }
-  }
-  useEffect(() => {
-    // const checkLoginStatus = async () => {
-    //   try {
-    //     const token = await AsyncStorage.getItem("authToken");
-  
-    //     if (token !== null && token !== "") {
-    //       // User is already authenticated, replace the entire navigation stack with the home screen
-    //       navigation.reset({
-    //         index: 0,
-    //         routes: [{ name: 'Harry' }],
-    //       });
-    //     } else {
-    //       console.log('Token is null or empty');
-    //     }
-    //   } catch (err) {
-    //     console.log("Error checking login status:", err);
-    //   }
-    // };
-  
-    // checkLoginStatus();
-    const testCall = async ()=>{
-      const result = await axios.get('http://192.168.8.2:8000/users');
-      console.log('testlogin',result)
-    }
-    testCall();
-  }, []);
+  };
 
+  const { userId, setUserId } = useContext(UserType);
   const handleLogin = async () => {
     try {
-      const user = { email:email, password:password };
-      axios.post("http://192.168.8.2:8000/login", user)
-.then((response)=>{
-  const token = response.data.token;
-  AsyncStorage.setItem("authToken",token);
-  console.log("Token from login:", token);
-  navigation.navigate("Harry");
-
-})
-
+      const user = { email: email, password: password };
+      axios.post("http://192.168.8.6:8000/login", user)
+      .then((response) => {
+        const token = response.data.token;
+        setUserId(token);
+        console.log(userId);
+        AsyncStorage.setItem("authToken", token);
+        console.log("Token from login:", token);
+        navigation.navigate("Harry");
+      });
     } catch (error) {
       console.error("Login error:", error);
       Alert.alert("Login Error", "Invalid Email or Password");
@@ -90,6 +66,7 @@ const Login =  () => {
             placeholder="Email"
             onChangeText={(text: string) => setEmail(text)}
             value={email}
+            autoCapitalize="none"
           />
           <TextInput
             style={styles.input}
@@ -97,6 +74,7 @@ const Login =  () => {
             secureTextEntry={true}
             onChangeText={(text: string) => setPassword(text)}
             value={password}
+            autoCapitalize="none"
           />
           <Button color="#243b2e" onPress={handleLogin} title="Sign in" />
           <View style={styles.lower}>

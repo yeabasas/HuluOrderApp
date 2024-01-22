@@ -5,7 +5,6 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import Home from "../app/screens/Home";
 import Login from "../app/screens/Login";
-import Register from "../app/screens/Register";
 import Harry from "../app/screens/Harry";
 import Fight from "../app/screens/Fight";
 import Order from "../app/screens/Order";
@@ -26,6 +25,10 @@ import AddItems from "../app/screens/AddItems";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import StackNavigation, { StackNavigationq } from "./StackNavigation";
 import { UserContext } from "../UserContext";
+import MessageScreen from "../app/screens/MessageScreen";
+import PostsProfile from "../app/screens/PostsProfile";
+import OrderProfile from "../app/screens/OrderProfile";
+import ChangePass from "../app/screens/ChangePass";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -46,10 +49,11 @@ const styles = StyleSheet.create({});
 
 function TabNavigation() {
   return (
-    <Tab.Navigator>
+    <Tab.Navigator screenOptions={{ tabBarHideOnKeyboard: true }}>
       <Tab.Screen
         name="Home"
         component={StackNavigationq}
+        unmountOnBlur={true}
         options={{
           tabBarLabel: "Home",
           tabBarLabelStyle: { color: "#243B2E" },
@@ -96,8 +100,9 @@ function TabNavigation() {
       />
 
       <Tab.Screen
-        name="Message"
-        component={Message}
+        name="MessageScreenF"
+        component={StackNavigationMessage}
+        unmountOnBlur={true}
         options={{
           tabBarLabel: "Message",
           tabBarLabelStyle: { color: "#243B2E" },
@@ -119,25 +124,10 @@ function TabNavigation() {
         }}
       />
       <Tab.Screen
-        name="Profile"
-        component={Profile}
+        name="UserProfile"
+        component={StackNavigationProfile}
         options={{
           tabBarLabel: "Profile",
-          tabBarLabelStyle: { color: "#243B2E" },
-          headerShown: false,
-          tabBarIcon: ({ focused }) =>
-            focused ? (
-              <Ionicons name="person" size={30} color="#243B2E" />
-            ) : (
-              <Ionicons name="person-outline" size={24} color="black" />
-            ),
-        }}
-      />
-      <Tab.Screen
-        name="Login"
-        component={Login}
-        options={{
-          tabBarLabel: "Login",
           tabBarLabelStyle: { color: "#243B2E" },
           headerShown: false,
           tabBarIcon: ({ focused }) =>
@@ -152,54 +142,56 @@ function TabNavigation() {
   );
 }
 
-function StackNavigationz() {
+function StackNavigationMessage() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen
-        name="Fight"
-        component={Fight}
-        screenOptions={{ headerShown: false }}
-      ></Stack.Screen>
-      <Stack.Screen
-        name="Home"
-        component={Home}
-        screenOptions={{ headerShown: false }}
-      ></Stack.Screen>
-      {/* <Stack.Screen
-          name="Harry"
-          component={Harry}
+    <UserContext>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen
+          name="MessageScreen"
+          component={MessageScreen}
+          unmountOnBlur
           screenOptions={{ headerShown: false }}
-        ></Stack.Screen> */}
-      {/* <Stack.Screen
-          name="Login"
-          component={Login}
+        ></Stack.Screen>
+        <Stack.Screen
+          name="Message"
+          component={Message}
+          unmountOnBlur
           screenOptions={{ headerShown: false }}
-        ></Stack.Screen> */}
-      <Stack.Screen
-        name="CartScreen"
-        component={CartScreen}
-        screenOptions={{ headerShown: false }}
-      ></Stack.Screen>
-      <Stack.Screen
-        name="Register"
-        component={Register}
-        screenOptions={{ headerShown: false }}
-      ></Stack.Screen>
-      {/* <Stack.Screen
-          name="Order"
-          component={Order}
+        ></Stack.Screen>
+      </Stack.Navigator>
+    </UserContext>
+  );
+}
+
+function StackNavigationProfile() {
+  return (
+    <UserContext>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen
+          name="Profile"
+          component={Profile}
+          unmountOnBlur
           screenOptions={{ headerShown: false }}
-        ></Stack.Screen> */}
-      <Stack.Screen
-        name="Detail"
-        component={Detail}
-        screenOptions={{ headerShown: false }}
-      ></Stack.Screen>
-      <Stack.Screen
-        name="Cart"
-        component={Cart}
-        screenOptions={{ headerShown: false }}
-      ></Stack.Screen>
-    </Stack.Navigator>
+        ></Stack.Screen>
+        <Stack.Screen
+          name="PostsProfile"
+          component={PostsProfile}
+          unmountOnBlur
+          screenOptions={{ headerShown: true }}
+        ></Stack.Screen>
+        <Stack.Screen
+          name="OrderProfile"
+          component={OrderProfile}
+          unmountOnBlur
+          screenOptions={{ headerShown: false }}
+        ></Stack.Screen>
+        <Stack.Screen
+          name="ChangePass"
+          component={ChangePass}
+          unmountOnBlur
+          screenOptions={{ headerShown: false }}
+        ></Stack.Screen>
+      </Stack.Navigator>
+    </UserContext>
   );
 }

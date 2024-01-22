@@ -12,8 +12,9 @@ import {
 import { io } from "socket.io-client";
 import HeaderSimp from "../components/HeaderSimp";
 import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const socket = io("http://192.168.8.2:8000");
+const socket = io("http://192.168.8.9:8000");
 
 export default function Message() {
   const [message, setMessage] = useState("");
@@ -32,11 +33,12 @@ export default function Message() {
   }, [socket]);
 
   useEffect(() => {
-    axios
-      .get("http://192.168.8.2:8000/messagee")
-      .then((items) => setMessagess(items.data))
-      .catch((err) => console.log(err));
-  }, []);
+      axios
+        .get("http://192.168.0.4:8000/messagee")
+        .then((items) => setMessagess(items.data))
+        .catch((err) => console.log(err));
+   
+  }, [messagess]);
 
   const sendMessage = () => {
     socket.emit("send_chat", message);
@@ -51,7 +53,9 @@ export default function Message() {
         style={{ flex: 1 }}
         keyExtractor={(item, index) => index.toString()}
         renderItem={({ item }) => (
-          <Text style={styles.messageText}>{item.text}</Text>
+          <>
+            <Text style={styles.messageText}>{item.text}</Text>
+          </>
         )}
       />
       <View style={{ justifyContent: "center", alignItems: "center" }}>
@@ -74,7 +78,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     backgroundColor: "#ff5",
     margin: 5,
-    width: '60%'
+    width: "60%",
   },
   messageInput: {
     borderWidth: 1,
