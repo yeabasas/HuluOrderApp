@@ -12,7 +12,7 @@ import Animated, {
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-const MAX_TRANSLATE_Y = -SCREEN_HEIGHT + 50;
+const MAX_TRANSLATE_Y = -SCREEN_HEIGHT + 200;
 
 type BottomSheetProps = {
   children?: React.ReactNode;
@@ -26,12 +26,12 @@ export type BottomSheetRefProps = {
 
 const BottomSheet = React.forwardRef<BottomSheetRefProps, BottomSheetProps>(
   ({ children }, ref) => {
-    const translateY = useSharedValue(0);
+    const translateY = useSharedValue(100);
     const active = useSharedValue(false);
 
     const scrollTo = useCallback((destination: number) => {
       'worklet';
-      active.value = destination !== 100;
+      active.value = destination !== 200;
 
       translateY.value = withSpring(destination, { damping: 50 });
     }, []);
@@ -45,7 +45,7 @@ const BottomSheet = React.forwardRef<BottomSheetRefProps, BottomSheetProps>(
       isActive,
     ]);
 
-    const context = useSharedValue({ y: 100 });
+    const context = useSharedValue({ y: 200 });
     const gesture = Gesture.Pan()
       .onStart(() => {
         context.value = { y: translateY.value };
@@ -56,7 +56,7 @@ const BottomSheet = React.forwardRef<BottomSheetRefProps, BottomSheetProps>(
       })
       .onEnd(() => {
         if (translateY.value > -SCREEN_HEIGHT / 1.1) {
-          scrollTo(100);
+          scrollTo(200);
         } else if (translateY.value < -SCREEN_HEIGHT / 3) {
           scrollTo(MAX_TRANSLATE_Y);
         }

@@ -17,78 +17,89 @@ import { useNavigation } from "@react-navigation/native";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { UserType } from "../../UserContext";
+import {
+  GestureHandlerRootView,
+  TouchableOpacity,
+} from "react-native-gesture-handler";
 
 const Login = () => {
-  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(true); // Added loading state
   const navigation: any = useNavigation();
   const { onLogin, onRegister } = useAuth();
+  const apiUrl = process.env.EXPO_PUBLIC_API_URL;
 
   const login = async () => {
-    const result = await onLogin!(email, password);
+    const result = await onLogin!(phone, password);
     if (result && result.error) {
       alert(result.msg);
     }
   };
 
   const { userId, setUserId } = useContext(UserType);
+
   const handleLogin = async () => {
     try {
-      const user = { email: email, password: password };
-      axios.post("http://192.168.8.6:8000/login", user)
-      .then((response) => {
-        const token = response.data.token;
-        setUserId(token);
-        console.log(userId);
-        AsyncStorage.setItem("authToken", token);
-        console.log("Token from login:", token);
-        navigation.navigate("Harry");
-      });
+      const user = { phone: phone, password: password };
+
+      const response = await axios.post(`${apiUrl}/login`, user);
+      const token = response.data.token;
+      setUserId(token);
+      console.log(userId);
+      AsyncStorage.setItem("authToken", token);
+      console.log("Token from login:", token);
+      navigation.navigate("Harry");
     } catch (error) {
       console.error("Login error:", error);
-      Alert.alert("Login Error", "Invalid Email or Password");
+      Alert.alert("Login Error", "Invalid Phone or Password");
     }
   };
 
   return (
-    <ScrollView>
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>WELCOME TO</Text>
-          <Text style={styles.title1}>HULU ORDER</Text>
-          <Text style={styles.title2}>Where your desires meet convenience</Text>
-        </View>
-        <View style={styles.main}>
-          <Text style={styles.login}>Login</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            onChangeText={(text: string) => setEmail(text)}
-            value={email}
-            autoCapitalize="none"
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            secureTextEntry={true}
-            onChangeText={(text: string) => setPassword(text)}
-            value={password}
-            autoCapitalize="none"
-          />
-          <Button color="#243b2e" onPress={handleLogin} title="Sign in" />
-          <View style={styles.lower}>
-            <Text style={styles.register}>Don't have account?</Text>
-            <Text
-              style={styles.registerNow}
-              onPress={() => navigation.navigate("Register")}
-            >
-              Create now
+    <GestureHandlerRootView>
+      <ScrollView>
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <Text style={styles.title}>WELCOME TO</Text>
+            <Text style={styles.title1}>HULU ORDER</Text>
+            <Text style={styles.title2}>
+              Where your desires meet convenience
             </Text>
           </View>
+          <View style={styles.main}>
+            <Text style={styles.login}>Login</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="phone"
+              onChangeText={(text: string) => setPhone(text)}
+              value={phone}
+              autoCapitalize="none"
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Password"
+              secureTextEntry={true}
+              onChangeText={(text: string) => setPassword(text)}
+              value={password}
+              autoCapitalize="none"
+            />
+            <TouchableOpacity onPress={handleLogin}>
+              <Text style={styles.btn}>Sign In</Text>
+            </TouchableOpacity>
+            <View style={styles.lower}>
+              <Text style={styles.register}>Don't have account?</Text>
+              <Text
+                style={styles.registerNow}
+                onPress={() => navigation.navigate("Register")}
+              >
+                Create now
+              </Text>
+            </View>
+          </View>
         </View>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </GestureHandlerRootView>
   );
 };
 const styles = StyleSheet.create({
@@ -150,6 +161,15 @@ const styles = StyleSheet.create({
   title2: {
     color: "#fff",
     marginTop: 10,
+  },
+  btn: {
+    paddingHorizontal: 30,
+    paddingVertical: 8,
+    alignSelf: "center",
+    justifyContent: "center",
+    backgroundColor: "#243b2e",
+    color: "#fff",
+    fontSize: 13,
   },
 });
 export default Login;

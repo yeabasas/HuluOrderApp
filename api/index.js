@@ -1,139 +1,51 @@
+const mysql = require("mysql2");
 const express = require("express");
 const bodyParser = require("body-parser");
-const mongoose = require("mongoose");
-const crypto = require("crypto");
-const multer = require('multer');
-const path = require('path');
-const nodemailer = require("nodemailer");
-
 const app = express();
-const port = 8000;
 const cors = require("cors");
+const crypto = require("crypto");
+const bcrypt = require("bcryptjs");
+
 app.use(cors());
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 const jwt = require("jsonwebtoken");
-// server.listen(port, () => {
-//   console.log("Server is running on port 8000");
-// });
 
-mongoose
-  .connect("mongodb+srv://huluorder:huluorder@cluster0.2vo3ezv.mongodb.net/")
-  .then(() => {
-    console.log("Connected to MongoDB");
+const conn = mysql.createConnection({
+  host: "127.0.0.1",
+  user: "root",
+  password: "",
+  database: "mtdb",
+});
+const pool = mysql
+  .createPool({
+    host: "127.0.0.1",
+    user: "root",
+    password: "",
+    database: "mtdb",
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
   })
-  .catch((err) => {
-    console.log("Error connecting to MongoDb", err);
-  });
-
-const User = require("./models/user");
-const Order = require("./models/order");
-const Items = require("./models/items");
-const Message = require("./models/message");
-
-const sendVerificationEmail = async (email, verificationToken) => {
-  // Create a Nodemailer transporter
-  const transporter = nodemailer.createTransport({
-    // Configure the email service or SMTP details here
-    service: "gmail",
-    auth: {
-      user: "yeabasayehegn@gmail.com",
-      pass: "athgcizhzrhcwnuz",
-    },
-  });
-
-  // Compose the email message
-  const mailOptions = {
-    from: "HuluOrder.com",
-    to: email,
-    subject: "Email Verification",
-    text: `Please click the following link to verify your email: http://192.168.1.11:8000/verify/${verificationToken}`,
-  };
-
-  // Send the email
-  try {
-    await transporter.sendMail(mailOptions);
-    console.log("Verification email sent successfully");
-  } catch (error) {
-    console.error("Error sending verification email:", error);
-  }
-};
-// Register a new user
-// ... existing imports and setup ...
-app.get("/message", async (req, res) => {
-  var MongoClient = require("mongodb").MongoClient;
-  var url = "mongodb+srv://huluorder:huluorder@cluster0.2vo3ezv.mongodb.net/";
-
-  MongoClient.connect(url, function (err, db) {
-    if (err) throw err;
-    var dbo = db.db("test");
-    dbo.collection("messages").findOne({}, function (err, result) {
-      if (err) throw err;
-      console.log(result.name);
-      db.close();
-    });
-  });
+  .promise();
+var server = app.listen(9000, function () {
+  console.log("Server is running at http://localhost:9000/");
 });
-app.post("/register", async (req, res) => {
-  try {
-    const { name, email, password } = req.body;
-
-    // Check if the email is already registered
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      console.log("Email already registered:", email); // Debugging statement
-      return res.status(400).json({ message: "Email already registered" });
-    }
-
-    // Create a new user
-    const newUser = new User({ name, email, password });
-
-    // Generate and store the verification token
-    newUser.verificationToken = crypto.randomBytes(20).toString("hex");
-
-    // Save the user to the database
-    await newUser.save();
-
-    // Debugging statement to verify data
-    console.log("New User Registered:", newUser);
-
-    // Send verification email to the user
-    // Use your preferred email service or library to send the email
-    sendVerificationEmail(newUser.email, newUser.verificationToken);
-
-    res.status(201).json({
-      message:
-        "Registration successful. Please check your email for verification.",
-    });
-  } catch (error) {
-    console.log("Error during registration:", error); // Debugging statement
-    res.status(500).json({ message: "Registration failed" });
+conn.connect((err) => {
+  if (err) {
+    console.error("Error connecting to MySQL:", err);
+  } else {
+    console.log("Connected to MySQL!");
   }
 });
 
-//endpoint to verify the email
-app.get("/verify/:token", async (req, res) => {
-  try {
-    const token = req.params.token;
-
-    //Find the user witht the given verification token
-    const user = await User.findOne({ verificationToken: token });
-    if (!user) {
-      return res.status(404).json({ message: "Invalid verification token" });
-    }
-
-    //Mark the user as verified
-    user.verified = true;
-    user.verificationToken = undefined;
-
-    await user.save();
-
-    res.status(200).json({ message: "Email verified successfully" });
-  } catch (error) {
-    res.status(500).json({ message: "Email Verificatioion Failed" });
-  }
+app.get("/user", function (req, res) {
+  conn.query("select * from user", function (err, rows, fields) {
+    if (err) console.log(err.message);
+    else res.send(rows);
+  });
 });
 
 const generateSecretKey = () => {
@@ -141,60 +53,64 @@ const generateSecretKey = () => {
 
   return secretKey;
 };
-
 const secretKey = generateSecretKey();
 
-//endpoint to login the user!
-app.post("/login", async (req, res) => {
+app.post("/register", async (req, res) => {
   try {
-    const { email, password } = req.body;
-
-    //check if the user exists
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(401).json({ message: "Invalid email or password" });
-    }
-
-    //check if the password is correct
-    if (user.password !== password) {
-      return res.status(401).json({ message: "Invalid password" });
-    }
-
-    //generate a token
-    const token = jwt.sign(
-      {
-        userId: user._id,
-      },
-      secretKey
+    const { firstName, lastName, phone, password } = req.body;
+    // Check if username already exists
+    const [existingUsers] = await pool.query(
+      "SELECT * FROM user WHERE Phone = ?",
+      [phone]
     );
 
-    res.status(200).json({ token });
-    console.log("token", user._id);
+    if (existingUsers.length > 0) {
+      return res.status(400).json({ message: "Username already exists" });
+    }
+    const hashed = bcrypt.hashSync(password, 10);
+    // Insert new user
+    await pool.query(
+      "INSERT INTO user (FirstName,LastName, Phone, Password) VALUES (?, ?, ?, ?)",
+      [firstName, lastName, phone, hashed]
+    );
+
+    res.status(201).json({ message: "User registered successfully" });
   } catch (error) {
-    res.status(500).json({ message: "Login Failed" });
+    console.error("Error during registration:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
-app.get("/user-details", async (req, res) => {
+app.post("/login", async (req, res) => {
   try {
-    // Assuming you have middleware to verify the authentication token and set user details in req.user
-    const userId = req.user.userId;
+    const { phone, password } = req.body;
 
-    // Fetch user details from the database
-    const userDetails = await User.findById(userId);
+    // Check if the user exists
+    const [existingUsers] = await pool.query(
+      "SELECT * FROM user WHERE Phone = ?",
+      [phone]
+    );
 
-    if (!userDetails) {
-      return res.status(404).json({ message: "User not found" });
+    if (existingUsers.length === 0) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+    const hashedPasswordFromDatabase = existingUsers[0].Password;
+
+    if (!bcrypt.compareSync(password, hashedPasswordFromDatabase)) {
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    // Return user details in the response
-    res.status(200).json({
-      email: userDetails.email,
-      // Add other user details as needed
-    });
+    const token = jwt.sign(
+      {
+        userId: existingUsers[0].ID,
+      },
+      secretKey
+    );
+    // Send the token as a response
+    return res.status(200).json({ token });
   } catch (error) {
-    console.error("Error fetching user details:", error);
-    res.status(500).json({ message: "Internal server error" });
+    console.error("Error during login:", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
 });
 
@@ -222,520 +138,570 @@ const authenticateToken = (req, res, next) => {
     next(); // Proceed to the next middleware or route handler
   });
 };
+
+app.get("/usersPhone/:token", async (req, res) => {
+  try {
+    const token = req.params.token;
+    const user = await pool.query("SELECT * FROM user WHERE ID = ?", [token]);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.status(200).json({ user });
+  } catch (error) {
+    res.status(500).json({ message: "Error retrieving the user profile" });
+  }
+});
 app.get("/users/:token", authenticateToken, async (req, res) => {
-  // User.find()
-  // .then((data)=>res.json(data))
-  // .catch(err=>res.send('Error'))
   try {
     const decodedToken = req.user;
     const token = decodedToken.userId;
-    const user = await User.findById(token);
+    const user = await pool.query("SELECT * FROM user WHERE ID = ?", [token]);
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-
     res.status(200).json({ user });
   } catch (error) {
     res.status(500).json({ message: "Error retrieving the user profile" });
   }
 });
 
-//endpoint to store a new address to the backend
-app.post("/addresses", async (req, res) => {
-  try {
-    const { userId, address } = req.body;
-
-    //find the user by the Userid
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    //add the new address to the user's addresses array
-    user.addresses.push(address);
-
-    //save the updated user in te backend
-    await user.save();
-
-    res.status(200).json({ message: "Address created Successfully" });
-  } catch (error) {
-    res.status(500).json({ message: "Error addding address" });
-  }
-});
-
-//endpoint to get all the addresses of a particular user
-app.get("/addresses/:userId", async (req, res) => {
-  try {
-    const userId = req.params.userId;
-
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    const addresses = user.addresses;
-    res.status(200).json({ addresses });
-  } catch (error) {
-    res.status(500).json({ message: "Error retrieveing the addresses" });
-  }
-});
-
-//endpoint to store all the orders
-app.post("/orders", async (req, res) => {
-  try {
-    const { userId, cartItems, totalPrice, shippingAddress, paymentMethod } =
-      req.body;
-
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    //create an array of product objects from the cart Items
-    const products = cartItems.map((item) => ({
-      name: item?.title,
-      quantity: item.quantity,
-      price: item.price,
-      image: item?.image,
-    }));
-
-    //create a new Order
-    const order = new Order({
-      user: userId,
-      products: products,
-      totalPrice: totalPrice,
-      shippingAddress: shippingAddress,
-      paymentMethod: paymentMethod,
-    });
-
-    await order.save();
-
-    res.status(200).json({ message: "Order created successfully!" });
-  } catch (error) {
-    console.log("error creating orders", error);
-    res.status(500).json({ message: "Error creating orders" });
-  }
-});
-
-//posting items
-const storage = multer.memoryStorage();
-// const upload = multer({ limits : 1000000 });
-
-// app.post("/postItem",upload.single('PostImages'), async (req, res) => {
-//   console.log('req.image',req.file)
-//   try {
-//     const {
-//       name,
-//       condition,
-//       storage,
-//       ram,
-//       color,
-//       sim,
-//       processor,
-//       description,
-//       price,
-//     } = req.body;
-//     const imageData = req.file.buffer.toString('base64');
-//     const imageUrl = `data:image/jpeg;base64,${imageData}`;
-//     //create an array of product objects from the cart Items
-
-//     //create a new Order
-//     const post = new Items({
-//       name: name,
-//       condition: condition,
-//       storage: storage,
-//       ram: ram,
-//       color: color,
-//       sim: sim,
-//       processor: processor,
-//       description: description,
-//       price: price,
-//       imageUrl,
-//     });
-
-//     await post.save();
-
-//     res.status(200).json({ message: "Order created successfully!" });
-//   } catch (error) {
-//     console.log("error creating orders", error);
-//     res.status(500).json({ message: "Error creating orders" });
-//   }
-// });
-const uploaded = multer({
-  limits : 1000000
-})
-
-app.post("/schedule/upload",uploaded.single("schedule"),async(req,res)=>{
-  await Order.findOneAndUpdate({fileName : "schedule"},{imageUrl: req.body.filename, file : req.file.buffer},{upsert : true}).exec();
-  res.status(200).send("Schedule uploaded");
-})
-//get the user profile
-app.get("/profile/:userId", async (req, res) => {
-  try {
-    const userId = req.params.userId;
-
-    const user = await User.findById(userId);
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    res.status(200).json({ user });
-  } catch (error) {
-    res.status(500).json({ message: "Error retrieving the user profile" });
-  }
-});
-
-app.get("/orders/:userId", async (req, res) => {
-  try {
-    const userId = req.params.userId;
-
-    const orders = await Order.find({ user: userId }).populate("user");
-
-    if (!orders || orders.length === 0) {
-      return res.status(404).json({ message: "No orders found for this user" });
-    }
-
-    res.status(200).json({ orders });
-  } catch (error) {
-    res.status(500).json({ message: "Error" });
-  }
-});
-
-app.get("/itemss", (req, res) => {
-  Items.find()
-    .then((items) => res.json(items))
-    .catch((error) => res.json(error));
-});
-app.get("/messagee/:token",async (req, res) => {
-  try {
-    const userId = req.params.userId;
-    const { message } =
-      req.body;
-
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    //create a new Message
-    const textMessage = new Order({
-      user: userId,
-      text: message,
-    });
-
-    await textMessage.save();
-
-    res.status(200).json({ message: "Order created successfully!" });
-  } catch (error) {
-    console.log("error creating orders", error);
-    res.status(500).json({ message: "Error creating orders" });
-  }
-});
-app.get("/messagee", async (req, res) => {
-  // try {
-  //   const userId = req.params.userId;
-
-  //   const textMessage = await Message.find({ user: userId }).populate("user");
-
-  //   if (!textMessage || textMessage.length === 0) {
-  //     return res.status(404).json({ message: "No message found for this user" });
-  //   }
-
-  //   res.status(200).json(textMessage);
-  // } catch (error) {
-  //   res.status(500).json({ message: "Error" });
-  // }
-  Message.find()
-    .then((items) => res.json(items))
-    .catch((error) => res.json(error));
-});
-/**
- * Main server app
- * This index.js file is responsible for all APIs and Socket connections
- */
-
-//libraies
-const http = require("http");
-const socketIo = require("socket.io");
-
-//DB Models
-// const Chat = require("./models/Chat");
-// const Broadcast = require("./models/Broadcast");
-
-//Environment Variables
-require("dotenv/config");
-
-const server = http.createServer(app); //Create server with express
-const io = socketIo(server); //Initialize Socket
-
-//Enabling JSON parser
-
-//DB Connection
-
-/**API Declaration */
-
-//User login API
-// app.post("/login", (req, res) => {
-//   const query = User.find({ id: req.body.id });
-//   query
-//     .exec()
-//     .then(data => {
-//       if (data.length === 0) {
-//         const user = new User({
-//           name: req.body.name,
-//           id: req.body.id,
-//           photo: req.body.photo
-//         });
-
-//         user
-//           .save()
-//           .then(data => {
-//             res.json(data);
-//           })
-//           .catch(error => {
-//             res.json(error);
-//           });
-//       } else {
-//         res.json(data[0]);
-//       }
-//     })
-//     .catch(error => {
-//       res.json(error);
-//     });
-// });
-
-//User finder API
-app.get("/find/:id", (req, res) => {
-  const user = User.find({ id: req.params.id });
-  user.exec().then((data) => {
-    res.json(data[0]);
-  });
-});
-
-//Active users finder API
-app.get("/users/active", (req, res) => {
-  const users = User.find({ isActive: true });
-  users.exec().then((data) => {
-    res.json(data);
-  });
-});
-
-//Inactive users finder API
-app.get("/users/inactive", (req, res) => {
-  const users = User.find({ isActive: false });
-  users.exec().then((data) => {
-    res.json(data);
-  });
-});
-
-/** Socket Declarations */
-
-var clients = []; //connected clients
-
-// io.on("connection", socket => {
-//   console.log("New User Connected");
-//   socket.on("storeClientInfo", function(data) {
-//     console.log(data.customId + " Connected");
-//     //store the new client
-//     var clientInfo = new Object();
-//     clientInfo.customId = data.customId;
-//     clientInfo.clientId = socket.id;
-//     clients.push(clientInfo);
-
-//     //update the active status
-//     const res = User.updateOne({ id: data.customId }, { isActive: true });
-//     res.exec().then(() => {
-//       console.log("Activated " + data.customId);
-
-//       //Notify others
-//       socket.broadcast.emit("update", "Updated");
-//       console.log("emmited");
-//     });
-//   });
-
-//   socket.on("disconnect", function(data) {
-//     for (var i = 0, len = clients.length; i < len; ++i) {
-//       var c = clients[i];
-
-//       if (c.clientId == socket.id) {
-//         //remove the client
-//         clients.splice(i, 1);
-//         console.log(c.customId + " Disconnected");
-
-//         //update the active status
-//         const res = User.updateOne({ id: c.customId }, { isActive: false });
-//         res.exec().then(data => {
-//           console.log("Deactivated " + c.customId);
-
-//           //notify others
-//           socket.broadcast.emit("update", "Updated");
-//         });
-//         break;
-//       }
-//     }
-//   });
-// });
-
-//Messages Socket
-const chatSocket = io.of("/chatsocket");
-chatSocket.on("connection", function (socket) {
-  //On new message
-  socket.on("newMessage", (data) => {
-    //Notify the room
-    socket.broadcast.emit("incommingMessage", "reload");
-  });
-});
-
-// io.on("connection",socket=>{
-//   console.log("a user connected")
-//   socket.on("send_chat",function(data) {
-//     console.log(data.customId + " Connected");
-//     io.emit("send_chat",data.message)
-//   })
-// })
-//Let the server to listen
-// server.listen(port, () => console.log(`Listening on port ${port}`));
-
-// server.js
-const passport = require("passport");
-
-// Connect to MongoDB
-
-// Middleware
-// app.use(passport.initialize());
-// require('./config/passport')(passport);
-
-// Routes
-// app.use('/api/users', require('./routes/users'));
-app.use("/api/messages", require("./routes/messages"));
-
-// Socket.io
-const authenticateTokenn = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) {
-    return res.status(401).json({ message: 'Unauthorized' });
-  }
-
-  jwt.verify(token, secretKey, (err, user) => {
-    if (err) {
-      return res.status(403).json({ message: 'Forbidden' });
-    }
-
-    req.user = user; // Set user details in req.user
-    next();
-  });
-};
-
-io.on("connection", (socket) => {
-  console.log("User connected:", socket.id);
-
-  socket.on("send_chat", async (data,userId) => {
-    console.log("Received message:", data);
-
-    
-    const message = new Message({
-      userId:`${userId}`,
-      text: `${data}`,
-    });
-
-    try {
-      await message.save();
-
-      io.emit("send_chat", { userId, text: data });
-    } catch (error) {
-      console.error("Error saving message:", error);
-    }
-  });
-
-  // Other event handlers...
-});
-
-
-// Start server
-server.listen(port, () => console.log(`Server running on port ${port}`));
-
-
-
-
-app.put('/updatePassword/:token',authenticateToken, async (req, res) => {
+app.put("/updatePassword/:token", authenticateToken, async (req, res) => {
   const { oldPassword, newPassword } = req.body;
-  // const token = req.headers.authorization.split(' ')[1]; // Extracting the token from headers
+
   const decodedToken = req.user;
-    const token = decodedToken.userId;
-  // const decodedToken = jwt.verify(token, 'authToken');
-  const userEmail = decodedToken.email; // Adjust this based on your token payload
+  const token = decodedToken.userId;
 
   try {
-    const user = await User.findOne({ email: userEmail });
     // Fetch the user from the database using the token
-    // const user = await User.findById(token);
-    console.log('user',user);
-    // Check if the provided old password matches the stored hashed password
-    if(oldPassword !== user.password) {
-      return res.status(400).json({ success: false, message: 'Old password is incorrect' });
+    const [userRows] = await pool.query("SELECT * FROM user WHERE ID = ?", [
+      token,
+    ]);
+
+    // Check if the user exists
+    if (userRows.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
-    // Update the user's password in the database
-    user.password = newPassword; // For simplicity, assuming newPassword is already hashed
-    await user.save();
+    const hashedPasswordFromDatabase = userRows[0].Password;
 
-    res.json({ success: true, message: 'Password updated successfully' });
+    // Check if the provided old password matches the stored hashed password
+    if (!bcrypt.compareSync(oldPassword, hashedPasswordFromDatabase)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Old password is incorrect" });
+    } else {
+      const hashed = bcrypt.hashSync(newPassword, 10);
+
+      // Update the user's password in the database
+      await pool.query("UPDATE user SET Password = ? WHERE ID = ?", [
+        hashed,
+        token,
+      ]);
+
+      res.json({ success: true, message: "Password updated successfully" });
+    }
   } catch (error) {
     console.error(error);
-    res.status(500).json({ success: false, message: 'Internal server error' });
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 });
 
+app.put("/updateUser/:token", authenticateToken, async (req, res) => {
+  const { firstName, lastName, phone } = req.body;
 
+  const decodedToken = req.user;
+  const token = decodedToken.userId;
 
+  try {
+    // Fetch the user from the database using the token
+    const [userRows] = await pool.query("SELECT * FROM user WHERE ID = ?", [
+      token,
+    ]);
 
+    // Check if the user exists
+    if (userRows.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
 
+    const user = userRows[0];
 
+    // Update the user's password in the database
+    await pool.query(
+      "UPDATE user SET FirstName = ?,LastName = ?, Phone = ? WHERE ID = ?",
+      [firstName, lastName, phone, token]
+    );
 
-
-
-
-
-
-
-
-
-
-const imageSchema = new mongoose.Schema({
-  name: {type: String, required: true, unique: true},
-  data: {type: Buffer, required: true},
-  contentType: {type: String, required: true},
+    res.json({ success: true, message: "User updated successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
 });
 
-const Image = mongoose.model('Image', imageSchema);
-
-
-const upload = multer();
-
-app.post('/images', upload.single('image'), async (req, res, next) => {
-    if (!req.file) {
-      return res.status(400).json({success: false, message: 'No file provided.'});
+app.get("/items", (req, res) => {
+  conn.query(
+    "SELECT * FROM posts WHERE status != 'Hidden' ORDER BY DateModified DESC",
+    function (err, rows, fields) {
+      if (err) console.log(err.message);
+      else res.send(rows);
     }
-    const image = new Image({
-      name: `${uuidv4()}.${req.file.mimetype.split('/')[1]}`,
-      data: req.file.buffer,
-      contentType: req.file.mimetype,
+  );
+});
+
+app.post("/postItem/:userId", authenticateToken, async (req, res) => {
+  const decodedToken = req.user;
+  const token = decodedToken.userId;
+  console.log("boddyyyyy", token);
+
+  try {
+    const {
+      name,
+      categories,
+      storage,
+      color,
+      condition,
+      sim,
+      ram,
+      processor,
+      description,
+      price,
+    } = req.body;
+
+    // Execute the query
+    await pool.query(
+      `INSERT INTO posts (userId, Category, ItemName, Storage, Color, \`Condition\`, Sim, Ram, Processor, Description, Price)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        token,
+        categories,
+        name,
+        storage,
+        color,
+        condition,
+        sim,
+        ram,
+        processor,
+        description,
+        price,
+      ]
+    );
+
+    res.status(201).json({ message: "Item posted successfully" });
+  } catch (error) {
+    console.error("Error during item posting:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+app.put("/updateView/:postId", async (req, res) => {
+  try {
+    const { view } = req.body;
+    const postId = req.params.postId;
+
+    console.log("viewed", view);
+    console.log("postId", postId);
+    const viewed = view + 1;
+    console.log("viewed viewed", viewed);
+    const [itemRow] = await pool.query("SELECT * FROM posts WHERE ID = ?", [
+      postId,
+    ]);
+
+    if (itemRow.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Item not found" });
+    }
+
+    await pool.query("UPDATE posts SET View = ? WHERE ID = ?", [
+      viewed,
+      postId,
+    ]);
+
+    res.json({ success: true, message: "User updated successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+app.put("/deletePost/:token/:posted", authenticateToken, async (req, res) => {
+  try {
+    const decodedToken = req.user;
+    const token = decodedToken.userId;
+    const postId = req.params.posted;
+    console.log("po", postId, "to", token);
+    const status = req.query.status;
+    const [itemRow] = await pool.query(
+      "SELECT * FROM posts WHERE ID = ?  AND userId = ? ",
+      [postId, token]
+    );
+    console.log("itemRow", status);
+    if (itemRow.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Item not found" });
+    }
+
+    await pool.query("UPDATE posts SET status = ? WHERE ID = ?", [
+      status,
+      postId,
+    ]);
+
+    res.json({ success: true, message: "User updated successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+app.put("/RenewPost/:token/:posted", authenticateToken, async (req, res) => {
+  try {
+    const decodedToken = req.user;
+    const token = decodedToken.userId;
+    const postId = req.params.posted;
+    console.log("po", postId, "to", token);
+    const status = req.query.status;
+    const dates = Date.now();
+    console.log("date", dates)
+    const [itemRow] = await pool.query(
+      "SELECT * FROM posts WHERE ID = ?  AND userId = ? ",
+      [postId, token]
+    );
+    console.log("itemRow", status);
+    if (itemRow.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Item not found" });
+    }
+
+    await pool.query("UPDATE posts SET status = ?,  DateModified = CURRENT_TIMESTAMP WHERE ID = ?", [
+      status,
+      postId,
+    ]);
+
+    res.json({ success: true, message: "User updated successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+app.post("/EditItem/:userId/:postId", authenticateToken, async (req, res) => {
+  const decodedToken = req.user;
+  const token = decodedToken.userId;
+  const userId = req.params.userId;
+  const postId = req.params.postId;
+
+  console.log("boddyyyyy", req.body);
+  console.log("body", postId);
+
+  try {
+    const {
+      name,
+      storage,
+      color,
+      condition,
+      sim,
+      ram,
+      processor,
+      description,
+      price,
+    } = req.body;
+
+    // Fetch the item to update
+    const [itemRow] = await pool.query("SELECT * FROM posts WHERE ID = ?", [
+      postId,
+    ]);
+
+    if (itemRow.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Item not found" });
+    }
+
+    // Execute the query
+    await pool.query(
+      `UPDATE posts 
+       SET userId=?, ItemName=?, Storage=?, Color=?, \`Condition\`=?, Sim=?, Ram=?, Processor=?, Description=?, Price=?
+       WHERE ID = ?`,
+      [
+        token,
+        name,
+        storage,
+        color,
+        condition,
+        sim,
+        ram,
+        processor,
+        description,
+        price,
+        postId,
+      ]
+    );
+
+    res.status(201).json({ message: "Item updated successfully" });
+  } catch (error) {
+    console.error("Error during item updating:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+app.post("/order/:userId", authenticateToken, async (req, res) => {
+  const decodedToken = req.user;
+  const token = decodedToken.userId;
+
+  try {
+    const {
+      name,
+      storage,
+      color,
+      condition,
+      sim,
+      ram,
+      processor,
+      description,
+    } = req.body;
+
+    // Execute the query
+    await pool.query(
+      `INSERT INTO items (userId, ItemName, Storage, Color, \`Condition\`, Sim, Ram, Processor, Description)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [token, name, storage, color, condition, sim, ram, processor, description]
+    );
+
+    res.status(201).json({ message: "Item posted successfully" });
+  } catch (error) {
+    console.error("Error during item posting:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+const mysqlq = require("mysql2/promise");
+
+// ...
+
+app.post(
+  "/send-message/:token/:postId/:receiverId",
+  authenticateToken,
+  async (req, res) => {
+    const decodedToken = req.user;
+    const senderId = decodedToken.userId;
+    const itemId = req.params.postId;
+    const receiverId = req.params.receiverId;
+    const message = req.body.message;
+    console.log("itemId", itemId);
+    if (!message || receiverId === null) {
+      return res.status(400).json({ error: "Message cannot be empty" });
+    }
+
+    // Start a transaction
+    const conn = await mysqlq.createConnection({
+      host: "127.0.0.1",
+      user: "root",
+      password: "",
+      database: "mtdb",
     });
 
     try {
-      await image.save();
-      console.log('image saved',image.name)
+      await conn.beginTransaction();
+
+      // Check if contact exists
+      const checkContactSql =
+        "SELECT ID FROM contact WHERE itemId = ? AND (senderId = ? OR receiverId = ?)";
+      const [existingContact] = await conn.query(checkContactSql, [
+        itemId,
+        senderId,
+        senderId,
+      ]);
+
+      let contactId;
+
+      if (existingContact.length > 0) {
+        // Contact already exists
+        contactId = existingContact[0].ID;
+      } else {
+        // Insert a new row in the contact table
+        const contactSql =
+          "INSERT INTO contact (senderId, receiverId, userId, itemId) VALUES (?,?,?,?)";
+        const [insertedContact] = await conn.query(contactSql, [
+          senderId,
+          receiverId,
+          senderId,
+          itemId,
+        ]);
+        contactId = insertedContact.insertId;
+      }
+
+      // Insert into messages table
+      const messagesSql =
+        "INSERT INTO messages (sender_id, receiver_id, message, postId) VALUES (?, ?, ?, ?)";
+      await conn.query(messagesSql, [senderId, receiverId, message, contactId]);
+
+      // Commit the transaction
+      await conn.commit();
+      res.status(200).json({ message: "Message sent successfully" });
     } catch (error) {
-      console.log(error);
-      return res.status(400).json({success: false, message: error.message});
+      // Rollback the transaction in case of an error
+      await conn.rollback();
+      console.error("Error:", error);
+      res.status(500).json({ error: "Internal Server Error" });
+    } finally {
+      // Close the connection
+      await conn.end();
     }
-    return res.status(201).json({
-        success: true,
-        message: 'Image created successfully.',
-        imageName: image.name,
-      });
-  },
+  }
 );
+
+app.get(
+  "/contactDetail/:userId/:postId",
+  authenticateToken,
+  async (req, res) => {
+    const decodedToken = req.user;
+    const token = decodedToken.userId;
+    const postId = req.params.postId;
+    console.log(token);
+
+    const userId = req.params.userId;
+    const sql = await pool.query(
+      "SELECT contact.ID AS contactId, contact.itemId, contact.userId,contact.receiverId,user.ID,user.FirstName FROM contact INNER JOIN user ON user.ID = contact.userId WHERE ((senderId = ? OR receiverId = ?) AND itemId = ?)",
+      [token, token, postId]
+    );
+
+    if (!sql[0]) {
+      return res.status(404).json({ message: "No item found" });
+    }
+    res.status(200).json(sql[0]);
+  }
+);
+
+app.get("/contact/:userId", authenticateToken, async (req, res) => {
+  const decodedToken = req.user;
+  const token = decodedToken.userId;
+  console.log(token);
+
+  const userId = req.params.userId;
+  const sql = await pool.query(
+    "SELECT contact.ID AS contactId, contact.itemId, contact.userId,contact.receiverId,user.ID,user.FirstName FROM contact INNER JOIN user ON user.ID = contact.userId WHERE senderId = ? OR receiverId = ?",
+    [token, token]
+  );
+
+  if (!sql[0]) {
+    return res.status(404).json({ message: "No item found" });
+  }
+  res.status(200).json(sql[0]);
+});
+
+app.get(
+  "/message/:token/:postId/:receiverId/:contactId",
+  authenticateToken,
+  async (req, res) => {
+    try {
+      const decodedToken = req.user;
+      const token = decodedToken.userId;
+      const postId = req.params.postId;
+      const userId = req.params.userId;
+      const receiverId = req.params.receiverId;
+      const contactId = req.params.contactId;
+      console.log("contactId", contactId);
+      const data = await pool.query(
+        "SELECT * FROM messages WHERE postId = ? ORDER BY timestamp",
+        [contactId]
+      );
+
+      if (!data[0]) {
+        return res.status(404).json({ message: "No item found" });
+      }
+      res.status(200).json(data[0]);
+    } catch (error) {
+      res.status(500).json({ message: "Error retrieving the user profile" });
+    }
+  }
+);
+// server.js
+
+const multer = require("multer");
+const fs = require("fs");
+
+// Create a multer storage to store uploaded images
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
+
+app.post("/upload", upload.single("image"), (req, res) => {
+  try {
+    const imageBuffer = req.file.buffer;
+    const imageName = req.file.originalname;
+
+    // Insert image data into the database
+    pool.query(
+      "INSERT INTO images (name, data) VALUES (?, ?)",
+      [imageName, imageBuffer],
+      (err, result) => {
+        if (err) {
+          console.error(err);
+          res.status(500).json({ message: "Internal Server Error" });
+        } else {
+          res.json({ message: "Image uploaded successfully" });
+        }
+      }
+    );
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+app.get("/postedItems/:token", authenticateToken, async (req, res) => {
+  try {
+    const decodedToken = req.user;
+    const token = decodedToken.userId;
+    const data = await pool.query(
+      "SELECT * FROM posts WHERE userId = ? AND  status != 'Hidden' ORDER BY DateModified DESC",
+      [token]
+    );
+    if (!data) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.status(200).json({ data });
+  } catch (error) {
+    res.status(500).json({ message: "Error retrieving the user profile" });
+  }
+});
+
+app.get("/orderedItems/:token", authenticateToken, async (req, res) => {
+  try {
+    const decodedToken = req.user;
+    const token = decodedToken.userId;
+    const data = await pool.query("SELECT * FROM items WHERE userId = ?", [
+      token,
+    ]);
+    if (!data) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.status(200).json({ data });
+  } catch (error) {
+    res.status(500).json({ message: "Error retrieving the user profile" });
+  }
+});
+
+app.get("/deletedItems/:token", authenticateToken, async (req, res) => {
+  try {
+    const decodedToken = req.user;
+    const token = decodedToken.userId;
+    const data = await pool.query(
+      "SELECT * FROM posts WHERE userId = ? AND status = 'Hidden'",
+      [token]
+    );
+    if (!data) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.status(200).json({ data });
+  } catch (error) {
+    res.status(500).json({ message: "Error retrieving the user profile" });
+  }
+});

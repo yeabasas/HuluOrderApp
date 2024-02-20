@@ -1,4 +1,5 @@
-import { AuthProvider, useAuth } from "./app/context/AuthContext";
+import { useAuth } from "./app/context/AuthContext";
+import { AuthProvider } from './AuthProvider'
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import Home from "./app/screens/Home";
@@ -19,13 +20,9 @@ const Stack = createNativeStackNavigator();
 
 export default function App() {
   return (
-    <Provider store={store}>
-      <UserContext>
-        <AuthProvider>
+    <AuthProvider>
           <StackNavigator/>
-        </AuthProvider>
-      </UserContext>
-    </Provider>
+    </AuthProvider>
   );
 }
 

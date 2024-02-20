@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
+import { StatusBar } from "expo-status-bar";
 import React, { useState, useEffect } from "react";
 import { StyleSheet, Text, View, TextInput, Button, Alert } from "react-native";
 
@@ -17,24 +18,26 @@ export default function App() {
     fetch?: string;
   }>({});
 
+  const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+
   const fetchUserDetails = async () => {
     try {
       const token = await AsyncStorage.getItem("authToken");
 
       const response = await axios.get(
-        `http://192.168.8.6:8000/users/${token}`,
+        `${apiUrl}/users/${token}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
 
-      if (!response.data.user) {
+      if (!response.data.user[0]) {
         throw new Error(
           response.data.message || "Failed to fetch user details"
         );
       }
 
-      const data = response.data.user;
+      const data = response.data.user[0];
       setUserDetails(data.password);
     } catch (error) {
       console.error(error);
@@ -78,7 +81,7 @@ export default function App() {
       const token = await AsyncStorage.getItem("authToken");
 
       const response = await axios.put(
-        `http://192.168.8.6:8000/updatePassword/${token}`,
+        `${apiUrl}/updatePassword/${token}`,
         {
           oldPassword,
           newPassword,
@@ -110,6 +113,7 @@ export default function App() {
 
   return (
     <View style={styles.container}>
+      <StatusBar style="dark"/>
       <Text style={styles.header}>Change Password</Text>
       {errors.fetch && <Text style={styles.error}>{errors.fetch}</Text>}
       {errors.general && <Text style={styles.error}>{errors.general}</Text>}

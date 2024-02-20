@@ -10,7 +10,7 @@ import {
   Pressable,
   Alert,
 } from "react-native";
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import { AntDesign } from "@expo/vector-icons";
 import HeaderSimp from "../components/HeaderSimp";
 // import Select2 from "react-native-select-two";
@@ -22,9 +22,11 @@ import {
   heightPercentageToDP as hp,
 } from "react-native-responsive-screen";
 import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const AddItems = ({ navigation }) => {
   const refModels = useRef<BottomSheetRefProps>(null);
+  const refCategories = useRef<BottomSheetRefProps>(null);
   const refStorage = useRef<BottomSheetRefProps>(null);
   const refSim = useRef<BottomSheetRefProps>(null);
   const refProcessor = useRef<BottomSheetRefProps>(null);
@@ -32,146 +34,172 @@ const AddItems = ({ navigation }) => {
   const refCondition = useRef<BottomSheetRefProps>(null);
   const refRam = useRef<BottomSheetRefProps>(null);
 
+  const onPressCategories = useCallback(() => {
+    const isActive = refCategories?.current?.isActive();
+    if (isActive) {
+      refCategories?.current?.scrollTo(200);
+      refModels?.current?.scrollTo(200);
+      refStorage?.current?.scrollTo(200);
+      refCondition?.current?.scrollTo(200);
+      refSim?.current?.scrollTo(200);
+      refRam?.current?.scrollTo(200);
+      refColor?.current?.scrollTo(200);
+      refProcessor?.current?.scrollTo(200);
+    } else {
+      refCategories?.current?.scrollTo(-600);
+      refModels?.current?.scrollTo(200);
+      refStorage?.current?.scrollTo(200);
+      refCondition?.current?.scrollTo(200);
+      refSim?.current?.scrollTo(200);
+      refRam?.current?.scrollTo(200);
+      refColor?.current?.scrollTo(200);
+      refProcessor?.current?.scrollTo(200);
+    }
+  }, []);
   const onPressModels = useCallback(() => {
     const isActive = refModels?.current?.isActive();
-
     if (isActive) {
-      refModels?.current?.scrollTo(100);
-      refStorage?.current?.scrollTo(100);
-      refCondition?.current?.scrollTo(100);
-      refSim?.current?.scrollTo(100);
-      refRam?.current?.scrollTo(100);
-      refColor?.current?.scrollTo(100);
-      refProcessor?.current?.scrollTo(100);
+      refModels?.current?.scrollTo(200);
+      refStorage?.current?.scrollTo(200);
+      refCondition?.current?.scrollTo(200);
+      refSim?.current?.scrollTo(200);
+      refRam?.current?.scrollTo(200);
+      refColor?.current?.scrollTo(200);
+      refProcessor?.current?.scrollTo(200);
     } else {
       refModels?.current?.scrollTo(-600);
-      refStorage?.current?.scrollTo(100);
-      refCondition?.current?.scrollTo(100);
-      refSim?.current?.scrollTo(100);
-      refRam?.current?.scrollTo(100);
-      refColor?.current?.scrollTo(100);
-      refProcessor?.current?.scrollTo(100);
+      refStorage?.current?.scrollTo(200);
+      refCondition?.current?.scrollTo(200);
+      refSim?.current?.scrollTo(200);
+      refRam?.current?.scrollTo(200);
+      refColor?.current?.scrollTo(200);
+      refProcessor?.current?.scrollTo(200);
     }
   }, []);
 
   const onPressStorage = useCallback(() => {
     const isActive = refStorage?.current?.isActive();
     if (isActive) {
-      refModels?.current?.scrollTo(100);
-      refStorage?.current?.scrollTo(100);
-      refCondition?.current?.scrollTo(100);
-      refSim?.current?.scrollTo(100);
-      refRam?.current?.scrollTo(100);
-      refColor?.current?.scrollTo(100);
-      refProcessor?.current?.scrollTo(100);
+      refModels?.current?.scrollTo(200);
+      refStorage?.current?.scrollTo(200);
+      refCondition?.current?.scrollTo(200);
+      refSim?.current?.scrollTo(200);
+      refRam?.current?.scrollTo(200);
+      refColor?.current?.scrollTo(200);
+      refProcessor?.current?.scrollTo(200);
     } else {
-      refModels?.current?.scrollTo(100);
+      refModels?.current?.scrollTo(200);
       refStorage?.current?.scrollTo(-600);
-      refCondition?.current?.scrollTo(100);
-      refSim?.current?.scrollTo(100);
-      refRam?.current?.scrollTo(100);
-      refColor?.current?.scrollTo(100);
-      refProcessor?.current?.scrollTo(100);
+      refCondition?.current?.scrollTo(200);
+      refSim?.current?.scrollTo(200);
+      refRam?.current?.scrollTo(200);
+      refColor?.current?.scrollTo(200);
+      refProcessor?.current?.scrollTo(200);
     }
   }, []);
+
   const onPressCondition = useCallback(() => {
     const isActive = refCondition?.current?.isActive();
     if (isActive) {
-      refModels?.current?.scrollTo(100);
-      refStorage?.current?.scrollTo(100);
-      refCondition?.current?.scrollTo(100);
-      refSim?.current?.scrollTo(100);
-      refRam?.current?.scrollTo(100);
-      refColor?.current?.scrollTo(100);
-      refProcessor?.current?.scrollTo(100);
+      refModels?.current?.scrollTo(200);
+      refStorage?.current?.scrollTo(200);
+      refCondition?.current?.scrollTo(200);
+      refSim?.current?.scrollTo(200);
+      refRam?.current?.scrollTo(200);
+      refColor?.current?.scrollTo(200);
+      refProcessor?.current?.scrollTo(200);
     } else {
-      refModels?.current?.scrollTo(100);
-      refStorage?.current?.scrollTo(100);
+      refModels?.current?.scrollTo(200);
+      refStorage?.current?.scrollTo(200);
       refCondition?.current?.scrollTo(-600);
-      refSim?.current?.scrollTo(100);
-      refRam?.current?.scrollTo(100);
-      refColor?.current?.scrollTo(100);
-      refProcessor?.current?.scrollTo(100);
+      refSim?.current?.scrollTo(200);
+      refRam?.current?.scrollTo(200);
+      refColor?.current?.scrollTo(200);
+      refProcessor?.current?.scrollTo(200);
     }
   }, []);
+
   const onPressColor = useCallback(() => {
     const isActive = refColor?.current?.isActive();
     if (isActive) {
-      refModels?.current?.scrollTo(100);
-      refStorage?.current?.scrollTo(100);
-      refCondition?.current?.scrollTo(100);
-      refSim?.current?.scrollTo(100);
-      refRam?.current?.scrollTo(100);
-      refColor?.current?.scrollTo(100);
-      refProcessor?.current?.scrollTo(100);
+      refModels?.current?.scrollTo(200);
+      refStorage?.current?.scrollTo(200);
+      refCondition?.current?.scrollTo(200);
+      refSim?.current?.scrollTo(200);
+      refRam?.current?.scrollTo(200);
+      refColor?.current?.scrollTo(200);
+      refProcessor?.current?.scrollTo(200);
     } else {
-      refModels?.current?.scrollTo(100);
-      refStorage?.current?.scrollTo(100);
-      refCondition?.current?.scrollTo(100);
-      refSim?.current?.scrollTo(100);
-      refRam?.current?.scrollTo(100);
+      refModels?.current?.scrollTo(200);
+      refStorage?.current?.scrollTo(200);
+      refCondition?.current?.scrollTo(200);
+      refSim?.current?.scrollTo(200);
+      refRam?.current?.scrollTo(200);
       refColor?.current?.scrollTo(-600);
-      refProcessor?.current?.scrollTo(100);
+      refProcessor?.current?.scrollTo(200);
     }
   }, []);
+
   const onPressProcessor = useCallback(() => {
     const isActive = refProcessor?.current?.isActive();
     if (isActive) {
-      refModels?.current?.scrollTo(100);
-      refStorage?.current?.scrollTo(100);
-      refCondition?.current?.scrollTo(100);
-      refSim?.current?.scrollTo(100);
-      refRam?.current?.scrollTo(100);
-      refColor?.current?.scrollTo(100);
-      refProcessor?.current?.scrollTo(100);
+      refModels?.current?.scrollTo(200);
+      refStorage?.current?.scrollTo(200);
+      refCondition?.current?.scrollTo(200);
+      refSim?.current?.scrollTo(200);
+      refRam?.current?.scrollTo(200);
+      refColor?.current?.scrollTo(200);
+      refProcessor?.current?.scrollTo(200);
     } else {
-      refModels?.current?.scrollTo(100);
-      refStorage?.current?.scrollTo(100);
-      refCondition?.current?.scrollTo(100);
-      refSim?.current?.scrollTo(100);
-      refRam?.current?.scrollTo(100);
-      refColor?.current?.scrollTo(100);
+      refModels?.current?.scrollTo(200);
+      refStorage?.current?.scrollTo(200);
+      refCondition?.current?.scrollTo(200);
+      refSim?.current?.scrollTo(200);
+      refRam?.current?.scrollTo(200);
+      refColor?.current?.scrollTo(200);
       refProcessor?.current?.scrollTo(-400);
     }
   }, []);
+
   const onPressRam = useCallback(() => {
     const isActive = refRam?.current?.isActive();
     if (isActive) {
-      refModels?.current?.scrollTo(100);
-      refStorage?.current?.scrollTo(100);
-      refCondition?.current?.scrollTo(100);
-      refSim?.current?.scrollTo(100);
-      refRam?.current?.scrollTo(100);
-      refColor?.current?.scrollTo(100);
-      refProcessor?.current?.scrollTo(100);
+      refModels?.current?.scrollTo(200);
+      refStorage?.current?.scrollTo(200);
+      refCondition?.current?.scrollTo(200);
+      refSim?.current?.scrollTo(200);
+      refRam?.current?.scrollTo(200);
+      refColor?.current?.scrollTo(200);
+      refProcessor?.current?.scrollTo(200);
     } else {
-      refModels?.current?.scrollTo(100);
-      refStorage?.current?.scrollTo(100);
-      refCondition?.current?.scrollTo(100);
-      refSim?.current?.scrollTo(100);
-      refRam?.current?.scrollTo(-600);
-      refColor?.current?.scrollTo(100);
-      refProcessor?.current?.scrollTo(100);
+      refModels?.current?.scrollTo(200);
+      refStorage?.current?.scrollTo(200);
+      refCondition?.current?.scrollTo(200);
+      refSim?.current?.scrollTo(200);
+      refRam?.current?.scrollTo(-450);
+      refColor?.current?.scrollTo(200);
+      refProcessor?.current?.scrollTo(200);
     }
   }, []);
+
   const onPressSim = useCallback(() => {
     const isActive = refSim?.current?.isActive();
     if (isActive) {
-      refModels?.current?.scrollTo(100);
-      refStorage?.current?.scrollTo(100);
-      refCondition?.current?.scrollTo(100);
-      refSim?.current?.scrollTo(100);
-      refRam?.current?.scrollTo(100);
-      refColor?.current?.scrollTo(100);
-      refProcessor?.current?.scrollTo(100);
+      refModels?.current?.scrollTo(200);
+      refStorage?.current?.scrollTo(200);
+      refCondition?.current?.scrollTo(200);
+      refSim?.current?.scrollTo(200);
+      refRam?.current?.scrollTo(200);
+      refColor?.current?.scrollTo(200);
+      refProcessor?.current?.scrollTo(200);
     } else {
-      refModels?.current?.scrollTo(100);
-      refStorage?.current?.scrollTo(100);
-      refCondition?.current?.scrollTo(100);
+      refModels?.current?.scrollTo(200);
+      refStorage?.current?.scrollTo(200);
+      refCondition?.current?.scrollTo(200);
       refSim?.current?.scrollTo(-400);
-      refRam?.current?.scrollTo(100);
-      refColor?.current?.scrollTo(100);
-      refProcessor?.current?.scrollTo(100);
+      refRam?.current?.scrollTo(200);
+      refColor?.current?.scrollTo(200);
+      refProcessor?.current?.scrollTo(200);
     }
   }, []);
 
@@ -184,6 +212,7 @@ const AddItems = ({ navigation }) => {
   const [processor, setProcessor] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
+  const [categories, setCategories] = useState("");
 
   const FormData = global.FormData;
 
@@ -234,9 +263,21 @@ const AddItems = ({ navigation }) => {
   //     console.error("Error submitting post:", error);
   //   }
   // };
-  const handlePost = () => {
+  const fetchUser = async () => {
+    const token = await AsyncStorage.getItem("authToken");
+    return token;
+  };
+  useEffect(() => {
+    fetchUser();
+    console.log();
+  }, [fetchUser]);
+  const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+
+  const handlePost = async () => {
+    const userId = await AsyncStorage.getItem("authToken");
     const item = {
       name: name,
+      categories: categories,
       condition: condition,
       storage: storage,
       ram: ram,
@@ -248,11 +289,14 @@ const AddItems = ({ navigation }) => {
     };
 
     axios
-      .post("http://192.168.8.6:8000/postItem", item)
+  .post(`${apiUrl}/postItem/${userId}`, item, {
+        headers: { Authorization: `Bearer ${userId}` },
+      })
       .then((response) => {
         console.log(response);
         Alert.alert("Posted successful", "You item been Posted Successfully");
         setName("");
+        setCategories("");
         setCondition("");
         setStorage("");
         setRam("");
@@ -278,13 +322,15 @@ const AddItems = ({ navigation }) => {
     const image = assets[0];
 
     // Create a Blob from the image data
-    const blob = await fetch(image.uri).then((response) => response.blob());
+    const blob = await fetch(image.filename).then((response) =>
+      response.blob()
+    );
 
     // Append the Blob to the FormData
     formData.append("image", blob, image.filename);
 
     try {
-      const response = await fetch("http://192.168.8.6:8000/images", {
+      const response = await fetch("http://192.168.8.3:9000/upload", {
         method: "POST",
         body: formData,
         headers: {
@@ -355,7 +401,39 @@ const AddItems = ({ navigation }) => {
                 </View>
               )}
             </View>
-
+            <TouchableOpacity style={styles.button} onPress={onPressCategories}>
+              {categories ? <Text>{categories}</Text> : <Text>Categories</Text>}
+            </TouchableOpacity>
+            <BottomSheet ref={refCategories} identifier="Categories">
+              <View>
+                <ScrollView>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setCategories("Phone");
+                      refCategories?.current.scrollTo(0);
+                    }}
+                  >
+                    <Text style={styles.innerButton}>Phone</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setCategories("Tablet");
+                      refCategories?.current.scrollTo(0);
+                    }}
+                  >
+                    <Text style={styles.innerButton}>Tablet</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setCategories("Computer");
+                      refCategories?.current.scrollTo(0);
+                    }}
+                  >
+                    <Text style={styles.innerButton}>Computer</Text>
+                  </TouchableOpacity>
+                </ScrollView>
+              </View>
+            </BottomSheet>
             <TouchableOpacity style={styles.button} onPress={onPressModels}>
               {name ? <Text>{name}</Text> : <Text>Models</Text>}
             </TouchableOpacity>
@@ -389,7 +467,6 @@ const AddItems = ({ navigation }) => {
                 </ScrollView>
               </View>
             </BottomSheet>
-
             <TouchableOpacity style={styles.button} onPress={onPressStorage}>
               {storage ? <Text>{storage}</Text> : <Text>Storage</Text>}
             </TouchableOpacity>
@@ -423,7 +500,6 @@ const AddItems = ({ navigation }) => {
                 </ScrollView>
               </View>
             </BottomSheet>
-
             <TouchableOpacity style={styles.button} onPress={onPressColor}>
               {color ? <Text>{color}</Text> : <Text>Color</Text>}
             </TouchableOpacity>
@@ -457,7 +533,6 @@ const AddItems = ({ navigation }) => {
                 </ScrollView>
               </View>
             </BottomSheet>
-
             <TouchableOpacity style={styles.button} onPress={onPressCondition}>
               {condition ? <Text>{condition}</Text> : <Text>Condition</Text>}
             </TouchableOpacity>
@@ -491,7 +566,6 @@ const AddItems = ({ navigation }) => {
                 </ScrollView>
               </View>
             </BottomSheet>
-
             <TouchableOpacity style={styles.button} onPress={onPressRam}>
               {ram ? <Text>{ram}</Text> : <Text>Ram</Text>}
             </TouchableOpacity>
@@ -501,7 +575,7 @@ const AddItems = ({ navigation }) => {
                   <TouchableOpacity
                     onPress={() => {
                       setRam("6 GB");
-                      refRam?.current.scrollTo(100);
+                      refRam?.current.scrollTo(200);
                     }}
                   >
                     <Text style={styles.innerButton}>6 GB</Text>
@@ -509,7 +583,7 @@ const AddItems = ({ navigation }) => {
                   <TouchableOpacity
                     onPress={() => {
                       setRam("8 GB");
-                      refRam?.current.scrollTo(100);
+                      refRam?.current.scrollTo(200);
                     }}
                   >
                     <Text style={styles.innerButton}>8 GB</Text>
@@ -517,7 +591,7 @@ const AddItems = ({ navigation }) => {
                   <TouchableOpacity
                     onPress={() => {
                       setRam("12 GB");
-                      refRam?.current.scrollTo(100);
+                      refRam?.current.scrollTo(200);
                     }}
                   >
                     <Text style={styles.innerButton}>12 GB</Text>
@@ -525,7 +599,7 @@ const AddItems = ({ navigation }) => {
                   <TouchableOpacity
                     onPress={() => {
                       setRam("16 GB");
-                      refRam?.current.scrollTo(100);
+                      refRam?.current.scrollTo(200);
                     }}
                   >
                     <Text style={styles.innerButton}>16 GB</Text>
@@ -533,7 +607,6 @@ const AddItems = ({ navigation }) => {
                 </ScrollView>
               </View>
             </BottomSheet>
-
             <TouchableOpacity style={styles.button} onPress={onPressSim}>
               {sim ? <Text>{sim}</Text> : <Text>Sim</Text>}
             </TouchableOpacity>
@@ -543,7 +616,7 @@ const AddItems = ({ navigation }) => {
                   <TouchableOpacity
                     onPress={() => {
                       setSim("Dual");
-                      refSim?.current.scrollTo(100);
+                      refSim?.current.scrollTo(200);
                     }}
                   >
                     <Text style={styles.innerButton}>Dual</Text>
@@ -551,7 +624,7 @@ const AddItems = ({ navigation }) => {
                   <TouchableOpacity
                     onPress={() => {
                       setSim("Single");
-                      refSim?.current.scrollTo(100);
+                      refSim?.current.scrollTo(200);
                     }}
                   >
                     <Text style={styles.innerButton}>Single</Text>
@@ -567,7 +640,6 @@ const AddItems = ({ navigation }) => {
                 </ScrollView>
               </View>
             </BottomSheet>
-
             <TouchableOpacity style={styles.button} onPress={onPressProcessor}>
               {processor ? <Text>{processor}</Text> : <Text>Processor</Text>}
             </TouchableOpacity>
@@ -577,7 +649,7 @@ const AddItems = ({ navigation }) => {
                   <TouchableOpacity
                     onPress={() => {
                       setProcessor("SnapDragon");
-                      refProcessor?.current.scrollTo(100);
+                      refProcessor?.current.scrollTo(200);
                     }}
                   >
                     <Text style={styles.innerButton}>SnapDargon</Text>
@@ -585,7 +657,7 @@ const AddItems = ({ navigation }) => {
                   <TouchableOpacity
                     onPress={() => {
                       setProcessor("Exness");
-                      refProcessor?.current.scrollTo(100);
+                      refProcessor?.current.scrollTo(200);
                     }}
                   >
                     <Text style={styles.innerButton}>Exness</Text>
@@ -598,15 +670,17 @@ const AddItems = ({ navigation }) => {
                 placeholder="Description"
                 multiline
                 onChangeText={(e) => setDescription(e)}
+                value={description}
               />
             </TouchableOpacity>
             <TouchableOpacity style={styles.button}>
               <TextInput
                 placeholder="Price"
                 onChangeText={(e) => setPrice(e)}
+                value={price}
               />
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleImage}>
+            <TouchableOpacity onPress={handlePost}>
               <Text style={styles.post}>Post</Text>
             </TouchableOpacity>
           </View>

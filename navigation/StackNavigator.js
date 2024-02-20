@@ -1,6 +1,6 @@
 import { StyleSheet } from "react-native";
-import React from "react";
-import { NavigationContainer } from "@react-navigation/native";
+import React, { useContext, useEffect } from "react";
+import { NavigationContainer, useNavigation } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import Home from "../app/screens/Home";
@@ -24,11 +24,17 @@ import {
 import AddItems from "../app/screens/AddItems";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import StackNavigation, { StackNavigationq } from "./StackNavigation";
-import { UserContext } from "../UserContext";
+import { UserContext, UserType } from "../UserContext";
 import MessageScreen from "../app/screens/MessageScreen";
 import PostsProfile from "../app/screens/PostsProfile";
 import OrderProfile from "../app/screens/OrderProfile";
 import ChangePass from "../app/screens/ChangePass";
+import EditProfile from "../app/screens/EditProfile";
+import OrderDetail from "../app/screens/OrderDetail";
+import Categories from "../app/components/Categories";
+import Brand from "../app/components/Brand";
+import PostEdit from "../app/screens/PostEdit";
+import DeletedPost from "../app/screens/DeletedPost";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -85,7 +91,7 @@ function TabNavigation() {
 
       <Tab.Screen
         name="AddItems"
-        component={AddItems}
+        component={StackNavigationPost}
         options={{
           tabBarLabel: "Post",
           tabBarLabelStyle: { color: "#243B2E" },
@@ -174,22 +180,73 @@ function StackNavigationProfile() {
           screenOptions={{ headerShown: false }}
         ></Stack.Screen>
         <Stack.Screen
-          name="PostsProfile"
+          name="Posts"
           component={PostsProfile}
           unmountOnBlur
-          screenOptions={{ headerShown: true }}
+          options={{ headerShown: true }}
         ></Stack.Screen>
         <Stack.Screen
-          name="OrderProfile"
+          name="Orders"
           component={OrderProfile}
           unmountOnBlur
-          screenOptions={{ headerShown: false }}
+          options={{ headerShown: true }}
         ></Stack.Screen>
         <Stack.Screen
           name="ChangePass"
           component={ChangePass}
           unmountOnBlur
           screenOptions={{ headerShown: false }}
+        ></Stack.Screen>
+        <Stack.Screen
+          name="EditProfile"
+          component={EditProfile}
+          unmountOnBlur
+          screenOptions={{ headerShown: false }}
+        ></Stack.Screen>
+        <Stack.Screen
+          name="OrderDetail"
+          component={OrderDetail}
+          unmountOnBlur
+          options={{ headerShown: true }}
+        ></Stack.Screen>
+        <Stack.Screen
+          name="PostEdit"
+          component={PostEdit}
+          unmountOnBlur
+          options={{ headerShown: true }}
+        ></Stack.Screen>
+        <Stack.Screen
+          name="DeletedPost"
+          component={DeletedPost}
+          unmountOnBlur
+          options={{ headerShown: true }}
+        ></Stack.Screen>
+      </Stack.Navigator>
+    </UserContext>
+  );
+}
+
+function StackNavigationPost(){
+  return (
+    <UserContext>
+      <Stack.Navigator screenOptions={{headerShown:false}}>
+        <Stack.Screen
+          name="AddItem"
+          component={AddItems}
+          unmountOnBlur
+          screenOptions={{ headerShown: false }}
+        ></Stack.Screen>
+        <Stack.Screen
+          name="Categories"
+          component={Categories}
+          unmountOnBlur
+          options={{ headerShown: true }}
+        ></Stack.Screen>
+        <Stack.Screen
+          name="Brand"
+          component={Brand}
+          unmountOnBlur
+          options={{ headerShown: true }}
         ></Stack.Screen>
       </Stack.Navigator>
     </UserContext>

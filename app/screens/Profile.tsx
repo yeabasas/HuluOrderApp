@@ -30,6 +30,9 @@ const Profile = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigation: any = useNavigation();
   const isFocused = useIsFocused();
+
+  const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+
   const reloadScreen = async () => {
     // Add any additional logic needed for the reload
     console.log("Reloading Profile screen...");
@@ -43,12 +46,6 @@ const Profile = () => {
       reloadScreen();
     }
   }, [isFocused]);
-  const logoutUser = () => {
-    setUserId(null);
-    setUser(null);
-    setIsLoggedIn(false);
-    reloadScreen();
-  };
 
   useEffect(() => {
     checkLoggedInStatus();
@@ -74,15 +71,16 @@ const Profile = () => {
     try {
       const token = await AsyncStorage.getItem("authToken");
   
-      const response = await axios.get(`http://192.168.8.6:8000/users/${token}`, {
+      const response = await axios.get(`${apiUrl}/users/${token}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
   
       if (response.data.error) {
         throw new Error(response.data.error);
       }
-  
-      setUser([response.data.user]);
+
+      setUser(response.data.user[0]);
+      console.log(response.data.user[0]);
     } catch (error) {
       console.error("Error fetching user details:", error.message);
       // handle error more gracefully, such as by displaying an error message to the user
@@ -131,7 +129,7 @@ const Profile = () => {
               alignContent: "center",
               marginLeft: 20,
             }}
-            key={index}
+            key={p.id}
           >
             <Image
               source={require("../assets/blank-profile-picture.png")}
@@ -139,8 +137,8 @@ const Profile = () => {
               resizeMode="contain"
             />
             <View style={{display:'flex',flexDirection:'column',justifyContent:'center'}}>
-              <Text style={{}}>{p.name}</Text>
-              <Text>{p.email}</Text>
+              <Text style={{}}>{p.FirstName}</Text>
+              <Text>{p.Phone}</Text>
               {/* <Pressable onPress={() => console.log("touched")}>
                 <Text
                   style={{
@@ -163,7 +161,6 @@ const Profile = () => {
       <View
         style={{
           marginTop: 20,
-          height: 100,
           shadowColor: "#243B2E", // Shadow color
           shadowOffset: { width: 0, height: 2 }, // Shadow offset (x, y)
           shadowOpacity: 0.2, // Shadow opacity (0 to 1)
@@ -183,7 +180,7 @@ const Profile = () => {
             marginVertical: 10,
             // borderWidth:1,
           }}
-          onPress={()=>navigation.navigate('PostsProfile')}
+          onPress={()=>navigation.navigate('Posts')}
         >
           <MaterialCommunityIcons name="post-outline" size={24} color="black" />
           <Text style={{ alignSelf: "center", justifyContent: "center",marginLeft:2 }}>
@@ -197,11 +194,25 @@ const Profile = () => {
             marginLeft: 20,
             marginVertical: 10,
           }}
-          onPress={()=>navigation.navigate('OrderProfile')}
+          onPress={()=>navigation.navigate('Orders')}
         >
           <MaterialIcons name="bookmark-border" size={24} color="black" />
           <Text style={{ alignSelf: "center", justifyContent: "center",marginLeft:2 }}>
             My Orders
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            marginLeft: 20,
+            marginVertical: 10,
+          }}
+          onPress={()=>navigation.navigate('DeletedPost')}
+        >
+          <AntDesign name="delete" size={24} color="black" />
+          <Text style={{ alignSelf: "center", justifyContent: "center",marginLeft:2 }}>
+            Deleted Post
           </Text>
         </TouchableOpacity>
       </View>
@@ -229,6 +240,7 @@ const Profile = () => {
             marginVertical: 10,
             // borderWidth:1,
           }}
+          onPress={()=>navigation.navigate('EditProfile')}
         >
           <AntDesign name="edit" size={24} color="black" />
           <Text style={{ alignSelf: "center", justifyContent: "center",marginLeft:2 }}>

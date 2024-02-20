@@ -7,47 +7,46 @@ import {
 } from "react-native-responsive-screen";
 import axios from "axios";
 import { KeyboardAvoidingView } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 
-const Register = ({ navigation }) => {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+const Register = () => {
+  const [FirstName, setFirstName] = useState("");
+  const [LastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
-  const { onRegister } = useAuth();
+  const apiUrl = process.env.EXPO_PUBLIC_API_URL;
 
-  const register = async () => {
-    const result = await onRegister(email, password);
-    if (result && result.error) {
-      alert(result.msg);
-    } else {
-      navigation.navigate("Login");
-    }
-  };
+  const navigation:any = useNavigation();
+
   const handleRegister = () => {
     const user = {
-      name: name,
-      email: email,
+      firstName: FirstName,
+      lastName: LastName,
+      phone: phone,
       password: password,
     };
 
     // send a POST  request to the backend API to register the user
     axios
-      .post("http://192.168.1.11:8000/register", user)
+      .post(`${apiUrl}/register`, user)
       .then((response) => {
         console.log(response);
         Alert.alert(
           "Registration successful",
           "You have been registered Successfully"
         );
-        setName("");
-        setEmail("");
+        setFirstName("");
+        setLastName("");
+        setPhone("");
         setPassword("");
+        navigation.navigate("Login");
       })
       .catch((error) => {
         Alert.alert(
           "Registration Error",
           "An error occurred while registering"
         );
-        console.log("registration failed", error.response.data);
+        console.log("registration failed", error.response);
       });
   };
   return (
@@ -62,15 +61,21 @@ const Register = ({ navigation }) => {
           <Text style={styles.login}>Sign Up</Text>
           <TextInput
             style={styles.input}
-            placeholder="Name"
-            onChangeText={(text: string) => setName(text)}
-            value={name}
+            placeholder="FirstName"
+            onChangeText={(text: string) => setFirstName(text)}
+            value={FirstName}
           />
           <TextInput
             style={styles.input}
-            placeholder="Email"
-            onChangeText={(text: string) => setEmail(text)}
-            value={email}
+            placeholder="LastName"
+            onChangeText={(text: string) => setLastName(text)}
+            value={LastName}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Phone"
+            onChangeText={(text: string) => setPhone(text)}
+            value={phone}
           />
           <TextInput
             style={styles.input}

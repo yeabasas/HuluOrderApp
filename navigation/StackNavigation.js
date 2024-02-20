@@ -9,6 +9,8 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { UserContext } from "../UserContext";
 import MessageScreen from "../app/screens/MessageScreen";
+import Message from "../app/screens/Message";
+
 const Stack = createNativeStackNavigator();
 
 export function StackNavigationq() {
@@ -40,11 +42,35 @@ export function StackNavigationq() {
         component={Register}
         screenOptions={{ headerShown: false }}
       ></Stack.Screen>
+      <Stack.Screen
+        name="MessageScreen"
+        component={StackNavigationMessage}
+        screenOptions={{ headerShown: false }}
+      ></Stack.Screen>
     </Stack.Navigator>
     </UserContext>
   );
 }
-
+function StackNavigationMessage() {
+  return (
+    <UserContext>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen
+          name="MessageScreen"
+          component={MessageScreen}
+          unmountOnBlur
+          screenOptions={{ headerShown: false }}
+        ></Stack.Screen>
+        <Stack.Screen
+          name="Message"
+          component={Message}
+          unmountOnBlur
+          screenOptions={{ headerShown: false }}
+        ></Stack.Screen>
+      </Stack.Navigator>
+    </UserContext>
+  );
+}
 const StackNavigation = () => {
   return (
       <GestureHandlerRootView>

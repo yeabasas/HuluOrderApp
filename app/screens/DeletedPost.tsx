@@ -1,37 +1,35 @@
 import {
-  View,
-  Text,
-  ScrollView,
-  Image,
-  StyleSheet,
-  TouchableOpacity,
-  RefreshControl,
   ActivityIndicator,
-  Alert,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  Image,
 } from "react-native";
 import React, { useCallback, useEffect, useState } from "react";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { StatusBar } from "expo-status-bar";
+import {
+    widthPercentageToDP as wp,
+    heightPercentageToDP as hp,
+  } from "react-native-responsive-screen";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { StatusBar } from "expo-status-bar";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import {
-  widthPercentageToDP as wp,
-  heightPercentageToDP as hp,
-} from "react-native-responsive-screen";
-import { useNavigation } from "@react-navigation/native";
+import { Alert } from "react-native";
 
-const PostsProfile = () => {
-  const [posts, setPosts] = useState([]);
+const DeletedPost = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [posts, setPosts] = useState([]);
   const apiUrl = process.env.EXPO_PUBLIC_API_URL;
-  const navigation: any = useNavigation();
 
   const fetchData = useCallback(async () => {
     try {
       const token = await AsyncStorage.getItem("authToken");
 
-      const response = await axios.get(`${apiUrl}/postedItems/${token}`, {
+      const response = await axios.get(`${apiUrl}/deletedItems/${token}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -40,13 +38,17 @@ const PostsProfile = () => {
       }
 
       setPosts(response.data.data[0]);
+      setLoading(false)
+      setRefreshing(false)
       console.log("response", response.data.data[0]);
     } catch (error) {
+        setLoading(false)
+        setRefreshing(false)
       console.error("Error fetching user details:", error.message);
       // handle error more gracefully, such as by displaying an error message to the user
     }
   }, []);
-
+  
   useEffect(() => {
     // Fetch data when the component mounts
     fetchData();
@@ -56,30 +58,31 @@ const PostsProfile = () => {
     }, 5000);
   }, [loading]);
 
-  const handleDelete = async (postId: any) => {
+  const onRefresh = () => {
+    setTimeout(() => {
+      setRefreshing(false);
+      setLoading(false);
+    }, 5000);
+    fetchData();
+  };
+
+  const handleRenewPost = async (postId:any)=>{
     const posted = String(postId);
     try {
-      const status = "Hidden";
+      const status = "new";
       const token = await AsyncStorage.getItem("authToken");
-      axios.put(`${apiUrl}/deletePost/${token}/${posted}`, null, {
+      axios.put(`${apiUrl}/RenewPost/${token}/${posted}`, null, {
         headers: { Authorization: `Bearer ${token}` },
         params: { status: status },
       });
 
-      Alert.alert("Success!", "Your post has been deleted.", [{ text: "OK" }], {
+      Alert.alert("Success!", "Your post has been Renewed.", [{ text: "OK" }], {
         cancelable: false,
       });
     } catch (error) {
       console.log("handle Delete clicked");
     }
-  };
-  const onRefresh = () => {
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 5000);
-    fetchData();
-  };
-
+  }
   return (
     <GestureHandlerRootView>
       <StatusBar style="dark" />
@@ -111,28 +114,8 @@ const PostsProfile = () => {
                   </View>
                 </View>
                 <View style={styles.itemsEditCon}>
-                  <TouchableOpacity
-                    onPress={() =>
-                      navigation.navigate("PostEdit", {
-                        itemId: p.ID,
-                        userId: p.userId,
-                        price: p.Price,
-                        name: p.ItemName,
-                        condition: p.Condition,
-                        storage: p.Storage,
-                        sim: p.Sim,
-                        ram: p.Ram,
-                        description: p.Description,
-                        color: p.Color,
-                        processor: p.processor,
-                        item: p,
-                      })
-                    }
-                  >
-                    <Text style={styles.itemsEdit}>Edit</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => handleDelete(p.ID)}>
-                    <Text style={styles.itemsDelete}>Delete</Text>
+                  <TouchableOpacity onPress={() => handleRenewPost(p.ID)}>
+                    <Text style={styles.itemsEdit}>Renew</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -188,7 +171,8 @@ const styles = StyleSheet.create({
   },
   itemsEdit: {
     textAlign: "center",
-    padding: 5,
+    padding: 8,
+    paddingHorizontal:11,
     backgroundColor: "green",
     borderRadius: 5,
     margin: 3,
@@ -212,4 +196,4 @@ const styles = StyleSheet.create({
     margin: "auto",
   },
 });
-export default PostsProfile;
+export default DeletedPost;
