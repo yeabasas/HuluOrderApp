@@ -14,6 +14,7 @@ import HeaderSimp from "../components/HeaderSimp";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRoute } from "@react-navigation/native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 export default function Message() {
   const [message, setMessage] = useState("");
@@ -25,7 +26,7 @@ export default function Message() {
   const postId = route?.params["itemId"];
   const contactId = route?.params["contactId"];
   const receiverId = route?.params["receiverId"];
-  console.log("Contact id ",contactId," rece ",receiverId,"postif",postId)
+  console.log("Contact id ", contactId, " rece ", receiverId, "postif", postId);
   const apiUrl = process.env.EXPO_PUBLIC_API_URL;
 
   const fetchUser = useCallback(async () => {
@@ -51,23 +52,26 @@ export default function Message() {
     try {
       const token = await AsyncStorage.getItem("authToken");
 
-      const response = await axios.get(`${apiUrl}/message/${token}/${postId}/${receiverId}/${contactId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await axios.get(
+        `${apiUrl}/message/${token}/${postId}/${receiverId}/${contactId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
       if (response.data.error) {
         throw new Error(response.data.error);
       }
 
       setMessagess(response.data);
-      console.log(response)
+      console.log(response);
       console.log("messages", response.data);
     } catch (error) {
       console.error("Error fetching user details:", error.message);
       // handle error more gracefully, such as by displaying an error message to the user
     }
   }, []);
- 
+
   useEffect(() => {
     fetchPost();
     fetchUser();
@@ -91,7 +95,7 @@ export default function Message() {
       const messages = {
         message: message,
       };
-  
+
       const token = await AsyncStorage.getItem("authToken");
       const response = await axios.post(
         `${apiUrl}/send-message/${token}/${postId}/${receiverId}`,
@@ -100,7 +104,7 @@ export default function Message() {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-  console.log(postId)
+      console.log(postId);
       if (response.data.message) {
         // Update local state with the new message
         const newMessage = {
@@ -108,9 +112,9 @@ export default function Message() {
           message: response.data.message,
           timestamp: response.data.timestamp,
         };
-  
+
         setMessagess((prevMessages) => [...prevMessages, newMessage]);
-  
+
         showToast();
         console.log("Sent", response.data);
       } else {
@@ -122,12 +126,19 @@ export default function Message() {
       console.error("Posting failed", error.message);
     }
   };
-  
 
   const MessageTimestamp = ({ timestamp }) => {
     const formattedTimestamp = formatTimestamp(timestamp);
 
-    return <Text style={styles.sentMessageContainer ? styles.timestampR : styles.timestamp}>{formattedTimestamp}</Text>;
+    return (
+      <Text
+        style={
+          styles.sentMessageContainer ? styles.timestampR : styles.timestamp
+        }
+      >
+        {formattedTimestamp}
+      </Text>
+    );
   };
 
   const formatTimestamp = (timestamp: string | number | Date) => {
@@ -164,6 +175,20 @@ export default function Message() {
                   ? "You: "
                   : item.sender_id + ": "}
                 {item.message}
+                <Text>{formatTimestamp(item.timestamp)}</Text>
+                {item.isRead ? (
+                  <MaterialCommunityIcons
+                    name="check-all"
+                    size={12}
+                    color="black"
+                  />
+                ) : (
+                  <MaterialCommunityIcons
+                    name="check"
+                    size={12}
+                    color="black"
+                  />
+                )}
               </Text>
             </View>
           );
@@ -196,14 +221,16 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     backgroundColor: "#fff",
     margin: 5,
+    display:'flex',
+    flexDirection:'column'
   },
-  timestamp:{
-    fontSize:10,
-    textAlign:'right',
+  timestamp: {
+    fontSize: 10,
+    textAlign: "right",
   },
-  timestampR:{
-    fontSize:10,
-    textAlign:'left',
+  timestampR: {
+    fontSize: 10,
+    textAlign: "left",
   },
   messageInput: {
     borderWidth: 1,

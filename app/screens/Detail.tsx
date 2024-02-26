@@ -1,4 +1,13 @@
-import { View, Text, StyleSheet, ScrollView, Image } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Image,
+  FlatList,
+  Dimensions,
+  Pressable,
+} from "react-native";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   widthPercentageToDP as wp,
@@ -20,6 +29,8 @@ import {
 import * as Clipboard from "expo-clipboard";
 import { ToastAndroid } from "react-native";
 import { StatusBar } from "expo-status-bar";
+const { width } = Dimensions.get("window");
+import Swiper from "react-native-swiper";
 
 const Detail = () => {
   const [user, setUser] = useState([]);
@@ -32,7 +43,17 @@ const Detail = () => {
   const [loading, setLoading] = useState(true);
   const PhoneNumber = user.map((item) => item.Phone).join(", ");
   const postId = route?.params["itemId"];
+  const [rowData, setRowData] = useState([]);
 
+  const fetchImage = async () => {
+    try {
+      const response = await axios.get(`${apiUrl}/itemsPostDetail/${postId}`);
+      setRowData(response.data);
+      console.log(rowData);
+    } catch (error) {
+      console.log(error); // Stop refreshing even if there's an error
+    }
+  };
   const copyText = (text: string) => {
     Clipboard.setStringAsync(text);
     ToastAndroid.show(`Phone number Copied ${PhoneNumber}`, ToastAndroid.LONG);
@@ -64,6 +85,7 @@ const Detail = () => {
 
   useFocusEffect(
     useCallback(() => {
+      fetchImage();
       fetchData();
     }, [fetchData, loading]) // Include dependencies
   );
@@ -95,7 +117,7 @@ const Detail = () => {
   const itemId = route?.params["itemId"];
   const userId = route?.params["userId"];
   const contactId = contact.map((text) => text.contactId).toString();
-  
+
   return (
     <GestureHandlerRootView>
       <StatusBar style="inverted" />
@@ -105,15 +127,36 @@ const Detail = () => {
           <Text style={styles.itemName}>{route?.params["name"]}</Text>
         </View>
         <View style={styles.ImageCon}>
-          <Image
-            source={require("../assets/622166.jpg")}
-            style={{
-              flex: 1,
-              width: null,
-              height: null,
-              resizeMode: "contain",
-            }}
-          />
+          {/* {rowData.map((item) => (
+            <FlatList
+            data={rowData}
+            keyExtractor={(item, index) => index.toString()}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            pagingEnabled
+            renderItem={({ item }) => (
+              <>
+                <Image
+                  style={styles.image}
+                  resizeMode="cover"
+                  source={{ uri: `${apiUrl}/images/${item.image_filename}` }}
+                  onError={(error) =>
+                    console.error("Image loading error:", error)
+                  }
+                />
+                <Text>{"No Image"}</Text>
+              </>
+              )}
+            /> */}
+            <Swiper style={styles.wrapper} showsButtons={true} loop={false}>
+              {rowData.map((item, index) => (
+                <View key={index} style={styles.slide}>
+                  <Image source={{ uri: `${apiUrl}/images/${item.image_filename}` }} style={styles.image} />
+                </View>
+              ))}
+            </Swiper>
+          
+          
         </View>
         <View style={styles.detail}>
           <View style={styles.detailHead}>
@@ -191,19 +234,27 @@ const Detail = () => {
               <View style={styles.table}>
                 <View style={styles.tableRow}>
                   <Text style={styles.cell}>
-                    Storage: {route?.params["storage"]}
+                    <Text style={styles.cellSpan}>Storage:</Text> {route?.params["storage"]}
                   </Text>
                   <Text style={styles.cell}>
-                    Condition: {route?.params["condition"]}
+                  <Text style={styles.cellSpan}>Condition:</Text> {route?.params["condition"]}
                   </Text>
                 </View>
                 <View style={styles.tableRow}>
-                  <Text style={styles.cell}>Sim: {route?.params["sim"]}</Text>
-                  <Text style={styles.cell}>Ram: {route?.params["ram"]}</Text>
+                  <Text style={styles.cell}>
+                  <Text style={styles.cellSpan}>Processor:</Text> {route?.params["processor"]}
+                  </Text>
+                  <Text style={styles.cell}>
+                  <Text style={styles.cellSpan}>Color:</Text> {route?.params["color"]}
+                  </Text>
+                </View>
+                <View style={styles.tableRow}>
+                  <Text style={styles.cell}><Text style={styles.cellSpan}>Sim:</Text> {route?.params["sim"]}</Text>
+                  <Text style={styles.cell}><Text style={styles.cellSpan}>Ram:</Text> {route?.params["ram"]}</Text>
                 </View>
                 <View style={styles.tableRow}>
                   <Text style={styles.cellDes}>
-                    Description: {route?.params["description"]}
+                  <Text style={styles.cellSpan}>Description:</Text> {route?.params["description"]}
                   </Text>
                 </View>
               </View>
@@ -220,7 +271,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingTop: 20,
     display: "flex",
-    justifyContent: "flex-end",
+    justifyContent: "center",
   },
   cart: {
     // backgroundColor: "black",
@@ -229,13 +280,17 @@ const styles = StyleSheet.create({
     fontSize: wp("5%"),
     color: "#37405a",
     fontWeight: "700",
+    alignSelf:'center',
   },
   ImageCon: {
     flex: 1,
+    display: "flex",
+    flexDirection: "row",
     width: wp(90),
-    height: hp(30),
-    // backgroundColor: "#fff",
-    margin: 10,
+    height: hp(40),
+    marginHorizontal: 10,
+    justifyContent:'center',
+    alignSelf:'center'
   },
   Image: {
     height: hp(30),
@@ -243,7 +298,6 @@ const styles = StyleSheet.create({
   },
   detail: {
     width: wp(100),
-    marginTop: 30,
     backgroundColor: "#243b2e",
     borderTopLeftRadius: 90,
     borderTopRightRadius: 90,
@@ -316,6 +370,9 @@ const styles = StyleSheet.create({
     textAlign: "left",
     paddingLeft: 20,
   },
+  cellSpan: {
+    color: "gray",
+  },
   cellDes: {
     flex: 1,
     color: "#fff",
@@ -327,6 +384,61 @@ const styles = StyleSheet.create({
     margin: 0,
     fontSize: 10,
     color: "#fff",
+  },
+  container: {
+    flex: 1,
+  },
+  image: {
+    width: width,
+    height: wp(100), // Adjust the height as needed
+    resizeMode: "contain",
+  },
+  item: {
+    flex: 1,
+    width: wp(35),
+    height: hp(25),
+    // backgroundColor: "#fff",
+    margin: 10,
+    borderColor: "#243B2E",
+    shadowColor: "#243B2E", // Shadow color
+    shadowOffset: { width: 0, height: 2 }, // Shadow offset (x, y)
+    shadowOpacity: 0.2, // Shadow opacity (0 to 1)
+    shadowRadius: 4, // Shadow radius
+    elevation: 2, // Android-specific: controls the appearance of the shadow
+  },
+  itemL: {
+    width: wp(35),
+    height: hp(25),
+    // backgroundColor: "#fff",
+    margin: 10,
+  },
+  itemInvisible: {
+    backgroundColor: "transparent",
+  },
+  itemText: {
+    color: "#243b2e",
+    marginLeft: 15,
+  },
+  itemBottom: {
+    height: hp(8),
+    backgroundColor: "#fff",
+    zIndex: 7,
+    paddingLeft: 10,
+  },
+  itemsImage: {
+    flex: 1,
+    width: null,
+    height: null,
+    resizeMode: "contain",
+  },
+  wrapper: {
+    height: hp(40),
+margin:0
+  },
+  slide: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
 

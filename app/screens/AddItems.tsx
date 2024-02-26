@@ -9,22 +9,40 @@ import {
   TextInput,
   Pressable,
   Alert,
+  RefreshControl,
+  ActivityIndicator,
 } from "react-native";
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { AntDesign } from "@expo/vector-icons";
 import HeaderSimp from "../components/HeaderSimp";
 // import Select2 from "react-native-select-two";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { ImagePicker, Album, Asset } from "expo-image-multiple-picker";
+import * as ImagePicker from "expo-image-picker";
+
+import { Album, Asset } from "expo-image-multiple-picker";
 import BottomSheet, { BottomSheetRefProps } from "../components/BottomSheet";
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from "react-native-responsive-screen";
+
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as FileSystem from "expo-file-system";
+import { FlatList } from "react-native";
+
+const imgDir = FileSystem.documentDirectory + "images/";
+
+const ensureDirExists = async () => {
+  const dirInfo = await FileSystem.getInfoAsync(imgDir);
+  if (!dirInfo.exists) {
+    await FileSystem.makeDirectoryAsync(imgDir, { intermediates: true });
+  }
+};
 
 const AddItems = ({ navigation }) => {
+  const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+
   const refModels = useRef<BottomSheetRefProps>(null);
   const refCategories = useRef<BottomSheetRefProps>(null);
   const refStorage = useRef<BottomSheetRefProps>(null);
@@ -214,168 +232,127 @@ const AddItems = ({ navigation }) => {
   const [price, setPrice] = useState("");
   const [categories, setCategories] = useState("");
 
-  const FormData = global.FormData;
+  const [images, setImages] = useState<string[] | null>([]);
+  const [loading, setLoading] = useState(false);
 
-  // const handlePost = async () => {
-  //   try {
-  //     // const uri = assets[0].uri;
-  //     // const responseImg = await fetch(uri);
-  //     // const blob = await responseImg.blob();
-
-  //     const formData = new FormData();
-  //     // formData.append("image", blob, assets[0].uri);
-
-  //     formData.append("name", name);
-  //     formData.append("condition", condition);
-  //     formData.append("sim", sim);
-  //     formData.append("storage", storage);
-  //     formData.append("ram", ram);
-  //     formData.append("color", color);
-  //     formData.append("processor", processor);
-  //     formData.append("description", description);
-  //     formData.append("price", price);
-
-  //     const response = await fetch("http://192.168.8.4:8000/postItem", {
-  //       method: "POST",
-  //       body: formData,
-  //       headers: {
-  //         "Content-Type": "multipart/form-data",
-  //       },
-  //     });
-
-  //     if (response.ok) {
-  //       console.log("Post submitted successfully");
-  //       // Reset form state after successful submission
-  //       setAssets(null);
-  //       setName("");
-  //       setCondition("");
-  //       setSim("");
-  //       setStorage("");
-  //       setRam("");
-  //       setColor("");
-  //       setProcessor("");
-  //       setDescription("");
-  //       setPrice("");
-  //     } else {
-  //       console.log("Failed to submit post");
-  //     }
-  //   } catch (error) {
-  //     console.error("Error submitting post:", error);
-  //   }
-  // };
-  const fetchUser = async () => {
-    const token = await AsyncStorage.getItem("authToken");
-    return token;
-  };
   useEffect(() => {
-    fetchUser();
-    console.log();
-  }, [fetchUser]);
-  const apiUrl = process.env.EXPO_PUBLIC_API_URL;
-
-  const handlePost = async () => {
-    const userId = await AsyncStorage.getItem("authToken");
-    const item = {
-      name: name,
-      categories: categories,
-      condition: condition,
-      storage: storage,
-      ram: ram,
-      color: color,
-      sim: sim,
-      processor: processor,
-      description: description,
-      price: price,
-    };
-
-    axios
-  .post(`${apiUrl}/postItem/${userId}`, item, {
-        headers: { Authorization: `Bearer ${userId}` },
-      })
-      .then((response) => {
-        console.log(response);
-        Alert.alert("Posted successful", "You item been Posted Successfully");
-        setName("");
-        setCategories("");
-        setCondition("");
-        setStorage("");
-        setRam("");
-        setColor("");
-        setSim("");
-        setProcessor("");
-        setDescription("");
-        setPrice("");
-      })
-      .catch((error) => {
-        Alert.alert("Post Error", "An error occurred while Posting");
-        console.log("Posting failed", error);
-      });
-  };
-
-  const handleImage = async () => {
-    if (assets.length === 0) {
-      console.log("No image selected.");
-      return;
+    loadImages();
+  }, [images]);
+  const loadImages = async () => {
+    await ensureDirExists();
+    const files = await FileSystem.readDirectoryAsync(imgDir);
+    if (files.length > 0) {
+      setImages(files.map((f) => imgDir + f));
     }
-
-    const formData = new FormData();
-    const image = assets[0];
-
-    // Create a Blob from the image data
-    const blob = await fetch(image.filename).then((response) =>
-      response.blob()
-    );
-
-    // Append the Blob to the FormData
-    formData.append("image", blob, image.filename);
-
-    try {
-      const response = await fetch("http://192.168.8.3:9000/upload", {
-        method: "POST",
-        body: formData,
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-
-      if (response.ok) {
-        console.log("Image uploaded successfully.");
-        // Handle success, e.g., show a success message
-      } else {
-        console.log("Image upload failed.");
-        // Handle failure, e.g., show an error message
-      }
-    } catch (error) {
-      console.error("Error uploading image:", error);
+  };
+  const selectImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+    if (!result.canceled) {
+      saveImage(result.assets[0].uri);
+      console.log(result.assets[0].uri);
     }
   };
 
-  const [open, setOpen] = useState(false);
-  const [album, setAlbum] = useState<Album | undefined>();
-  const [assets, setAssets] = useState<Asset[]>([]);
+  const saveImage = async (uri: string) => {
+    await ensureDirExists();
+    const filename = new Date().getTime() + ".jpg";
+    const dest = imgDir + filename;
+    await FileSystem.copyAsync({ from: uri, to: dest });
+    alert("Saved image to " + dest);
+    setImages([...images, dest]);
+  };
 
-  if (open) {
+  // ... (rest of the code)
+  const deleteImage = async () => {
+    const promises = images.map(async (uri) => {
+      await FileSystem.deleteAsync(uri);
+      setImages(images.filter((value) => value !== uri));
+    });
+  };
+
+  const reset = () => {
+    setCategories("");
+    setName("");
+    setCondition("");
+    setSim("");
+    setStorage("");
+    setRam("");
+    setColor("");
+    setProcessor("");
+    setDescription("");
+    setPrice("");
+  };
+  const renderImage = ({ item }: { item: string }) => {
     return (
-      <ImagePicker
-        onSave={(assets) => {
-          setAssets(assets);
-          setOpen(false);
-        }}
-        onCancel={() => {
-          setAssets([]);
-          setAlbum(undefined);
-          setOpen(false);
-        }}
-        onSelectAlbum={(album) => setAlbum(album)}
-        selected={assets}
-        selectedAlbum={album}
-        multiple
-        galleryColumns={3}
-        albumColumns={3}
-        limit={5}
-      />
+      <GestureHandlerRootView>
+        <ScrollView>
+          <View style={{ flex: 1, gap: 20 }}>
+            <Image
+              source={{ uri: item }}
+              style={{ width: 100, height: 100, margin: 5 }}
+            />
+          </View>
+        </ScrollView>
+      </GestureHandlerRootView>
     );
-  }
+  };
+
+  const uploadData = async () => {
+    try {
+      setLoading(true);
+
+      // Upload text data
+      const userId = await AsyncStorage.getItem("authToken");
+      const item = {
+        name: name,
+        categories: categories,
+        condition: condition,
+        storage: storage,
+        ram: ram,
+        color: color,
+        sim: sim,
+        processor: processor,
+        description: description,
+        price: price,
+      };
+
+      console.log("postID");
+      const response = await axios.post(`${apiUrl}/postItem/${userId}`, item, {
+        headers: { Authorization: `Bearer ${userId}` },
+      });
+      const postId = response.data.postId;
+      console.log("postID", postId);
+      // Upload images
+      const promises = images.map((uri) =>
+        FileSystem.uploadAsync(`${apiUrl}/upload`, uri, {
+          httpMethod: "POST",
+          uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+          fieldName: "file",
+          parameters: { postId: `${postId}` },
+        })
+      );
+
+      await Promise.all(promises);
+
+      // Clean up - delete images after uploading
+      deleteImage();
+      reset();
+      setLoading(false);
+      Alert.alert("Success", "Item and images uploaded successfully!");
+
+      // Clear form fields
+      // ... (clear other state variables)
+    } catch (error) {
+      console.error("Error uploading data:", error);
+      setLoading(false);
+      Alert.alert("Error", "Failed to upload data");
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -384,22 +361,23 @@ const AddItems = ({ navigation }) => {
         <ScrollView>
           <View style={styles.container}>
             <View style={{ display: "flex", flexDirection: "row", margin: 10 }}>
-              <TouchableOpacity onPress={() => setOpen(true)}>
+              <TouchableOpacity onPress={selectImage}>
                 <AntDesign name="plussquare" size={60} color="#243B2E" />
               </TouchableOpacity>
-              {assets ? (
-                <View style={styles.container1}>
-                  {assets?.map((p, index) => (
-                    <View key={index} style={styles.item}>
-                      <Image source={{ uri: p.uri }} height={60} width={60} />
-                    </View>
-                  ))}
-                </View>
-              ) : (
-                <View style={{ alignSelf: "center", marginStart: 30 }}>
-                  <Text>Upload Image</Text>
-                </View>
-              )}
+              <View style={styles.container1}>
+                {images ? (
+                  <FlatList
+                    data={images}
+                    renderItem={renderImage}
+                    keyExtractor={(item) => item}
+                    horizontal
+                  />
+                ) : (
+                  <View style={{ alignSelf: "center", marginStart: 30 }}>
+                    <Text>Upload Image</Text>
+                  </View>
+                )}
+              </View>
             </View>
             <TouchableOpacity style={styles.button} onPress={onPressCategories}>
               {categories ? <Text>{categories}</Text> : <Text>Categories</Text>}
@@ -680,9 +658,15 @@ const AddItems = ({ navigation }) => {
                 value={price}
               />
             </TouchableOpacity>
-            <TouchableOpacity onPress={handlePost}>
-              <Text style={styles.post}>Post</Text>
-            </TouchableOpacity>
+            {loading ? (
+              <TouchableOpacity disabled={loading}>
+                <Text style={styles.post}>Posting</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity onPress={uploadData}>
+                <Text style={styles.post}>Post</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </ScrollView>
       </GestureHandlerRootView>
@@ -714,16 +698,13 @@ const styles = StyleSheet.create({
     borderColor: "gray",
   },
   container1: {
-    marginHorizontal: "auto",
-    width: wp(80),
     flexDirection: "row",
     flexWrap: "wrap",
-    display: "flex",
+    alignItems: "center",
+    justifyContent: "flex-start",
   },
-
   item: {
-    marginRight: 4,
-    // Android-specific: controls the appearance of the shadow
+    margin: 5,
   },
   post: {
     backgroundColor: "#243B2E",

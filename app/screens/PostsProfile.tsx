@@ -8,6 +8,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   Alert,
+  Pressable,
 } from "react-native";
 import React, { useCallback, useEffect, useState } from "react";
 import axios from "axios";
@@ -31,7 +32,7 @@ const PostsProfile = () => {
     try {
       const token = await AsyncStorage.getItem("authToken");
 
-      const response = await axios.get(`${apiUrl}/postedItems/${token}`, {
+      const response = await axios.get(`${apiUrl}/PostDetails/${token}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -42,7 +43,7 @@ const PostsProfile = () => {
       setPosts(response.data.data[0]);
       console.log("response", response.data.data[0]);
     } catch (error) {
-      console.error("Error fetching user details:", error.message);
+      console.error("Error fetching posts:", error.message);
       // handle error more gracefully, such as by displaying an error message to the user
     }
   }, []);
@@ -99,11 +100,23 @@ const PostsProfile = () => {
             {posts.map((p) => (
               <View style={styles.items} key={p._id}>
                 <View style={styles.itemsImg}>
-                  <Image
-                    source={require("../assets/blank-profile-picture.png")}
-                    style={{ height: hp(20), width: wp(20), marginRight: 10 }}
-                    resizeMode="contain"
-                  />
+                 
+                          {p.image_filename ? (
+                            <Image
+                            style={{ height: hp(20), width: wp(20), marginRight: 10 }}
+                              resizeMode="contain"
+                              source={{ uri: `${apiUrl}/images/${p.image_filename}` }}
+                              onError={(error) => console.error("Image loading error:", error)}
+                            />
+                          ) : (
+                            <Image
+                            style={{ height: hp(20), width: wp(20), marginRight: 10 }}
+                              resizeMode="contain"
+                              source={require("../assets/622166.jpg")} // Default image or placeholder
+                            />
+                          )}
+                    
+                  
                   <View style={styles.itemsTxt}>
                     <Text style={styles.itemsTxtBold}>{p.ItemName}</Text>
                     <Text>ETB {p.Price}</Text>

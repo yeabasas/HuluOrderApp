@@ -5,6 +5,9 @@ const app = express();
 const cors = require("cors");
 const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
+const fs = require("fs");
+const multer = require("multer");
+const path = require("path");
 
 app.use(cors());
 
@@ -253,11 +256,60 @@ app.get("/items", (req, res) => {
     }
   );
 });
+app.get("/itemsPostDetail/:postId", (req, res) => {
+  const post_Id= req.params.postId;
+  conn.query(
+    "SELECT image_filename FROM post_images WHERE post_id = ?",[post_Id],
+    function (err, rows, fields) {
+      if (err) console.log(err.message);
+      else res.send(rows);
+    }
+  );
+});
+app.get("/PostDetails/:token", (req, res) => {
+  const post_Id= req.params.token;
+  conn.query(
+    "SELECT posts.ID AS post_id, posts.ItemName, posts.Category, posts.Condition,posts.View,posts.status,posts.userId, posts.Storage, posts.Ram, posts.Color, posts.Sim, posts.Processor, posts.Description, posts.Price, MIN(post_images.image_filename) AS image_filename FROM posts JOIN post_images ON posts.ID = post_images.post_id GROUP BY posts.ID;",
+    function (err, rows, fields) {
+      if (err) console.log(err.message);
+      else {
+        console.log(rows)
+        res.send(rows);}
+    }
+  );
+});
+app.get("/itemsPost", (req, res) => {
+  conn.query(
+    "SELECT posts.ID AS post_id, posts.ItemName, posts.Category, posts.Condition,posts.View,posts.status,posts.userId, posts.Storage, posts.Ram, posts.Color, posts.Sim, posts.Processor, posts.Description, posts.Price, MIN(post_images.image_filename) AS image_filename FROM posts JOIN post_images ON posts.ID = post_images.post_id GROUP BY posts.ID;",
+    function (err, rows, fields) {
+      if (err) console.log(err.message);
+      else res.send(rows);
+    }
+  );
+});
 
+
+app.use('/images', express.static(path.join(__dirname, 'images')));
+app.get('/getImages/:postId', async (req, res) => {
+  const { postId } = req.params;
+
+  try {
+    // Assuming 'images' is your table name
+    const images = await db.query('SELECT filename FROM images WHERE postId = ?', [postId]);
+
+    // Extract filenames from the result
+    const filenames = images.map(img => img.filename);
+
+    // Send filenames as a response
+    res.json(filenames);
+  } catch (error) {
+    console.error('Error fetching images:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 app.post("/postItem/:userId", authenticateToken, async (req, res) => {
   const decodedToken = req.user;
-  const token = decodedToken.userId;
-  console.log("boddyyyyy", token);
+  const userId = decodedToken.userId;
 
   try {
     const {
@@ -274,11 +326,11 @@ app.post("/postItem/:userId", authenticateToken, async (req, res) => {
     } = req.body;
 
     // Execute the query
-    await pool.query(
+    const result = await pool.query(
       `INSERT INTO posts (userId, Category, ItemName, Storage, Color, \`Condition\`, Sim, Ram, Processor, Description, Price)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        token,
+        userId,
         categories,
         name,
         storage,
@@ -291,13 +343,69 @@ app.post("/postItem/:userId", authenticateToken, async (req, res) => {
         price,
       ]
     );
-
-    res.status(201).json({ message: "Item posted successfully" });
+console.log("Result from post: ",result[0].insertId);
+    // Check if the insertion was successful
+    if (result.affectedRows != 0) {
+      console.log("best")
+      res.status(201).json({
+        message: "Item posted successfully",
+        postId: result[0].insertId, // Send the postId back to the frontend
+      });
+      console.log("bestpost")
+    } else {
+      res.status(500).json({ message: "Failed to insert into the database" });
+    }
   } catch (error) {
     console.error("Error during item posting:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
+
+// app.post("/postItem/:userId", authenticateToken, async (req, res) => {
+//   const decodedToken = req.user;
+//   const token = decodedToken.userId;
+//   console.log("boddyyyyy", token);
+
+//   try {
+//     const {
+//       name,
+//       categories,
+//       storage,
+//       color,
+//       condition,
+//       sim,
+//       ram,
+//       processor,
+//       description,
+//       price,
+//     } = req.body;
+
+//     // Execute the query
+//     const [posted]=await pool.query(
+//       `INSERT INTO posts (userId, Category, ItemName, Storage, Color, \`Condition\`, Sim, Ram, Processor, Description, Price)
+//     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+//       [
+//         token,
+//         categories,
+//         name,
+//         storage,
+//         color,
+//         condition,
+//         sim,
+//         ram,
+//         processor,
+//         description,
+//         price,
+//       ]
+//     );
+//     postId = posted.insertId;
+
+//     res.status(201).json({ message: "Item posted successfully" });
+//   } catch (error) {
+//     console.error("Error during item posting:", error);
+//     res.status(500).json({ message: "Internal server error" });
+//   }
+// });
 
 app.put("/updateView/:postId", async (req, res) => {
   try {
@@ -368,7 +476,7 @@ app.put("/RenewPost/:token/:posted", authenticateToken, async (req, res) => {
     console.log("po", postId, "to", token);
     const status = req.query.status;
     const dates = Date.now();
-    console.log("date", dates)
+    console.log("date", dates);
     const [itemRow] = await pool.query(
       "SELECT * FROM posts WHERE ID = ?  AND userId = ? ",
       [postId, token]
@@ -380,10 +488,10 @@ app.put("/RenewPost/:token/:posted", authenticateToken, async (req, res) => {
         .json({ success: false, message: "Item not found" });
     }
 
-    await pool.query("UPDATE posts SET status = ?,  DateModified = CURRENT_TIMESTAMP WHERE ID = ?", [
-      status,
-      postId,
-    ]);
+    await pool.query(
+      "UPDATE posts SET status = ?,  DateModified = CURRENT_TIMESTAMP WHERE ID = ?",
+      [status, postId]
+    );
 
     res.json({ success: true, message: "User updated successfully" });
   } catch (error) {
@@ -603,10 +711,6 @@ app.get(
   async (req, res) => {
     try {
       const decodedToken = req.user;
-      const token = decodedToken.userId;
-      const postId = req.params.postId;
-      const userId = req.params.userId;
-      const receiverId = req.params.receiverId;
       const contactId = req.params.contactId;
       console.log("contactId", contactId);
       const data = await pool.query(
@@ -623,38 +727,163 @@ app.get(
     }
   }
 );
+app.get("/message/:token",authenticateToken,async (req, res) => {
+    try {
+      const decodedToken = req.user;
+      const token = decodedToken.userId;
+      const isRead = 0;
+      console.log("contactId", contactId);
+      const data = await pool.query(
+        "SELECT * FROM messages WHERE isRead = ? AND (sender_id=? OR receiver_id=?) ORDER BY timestamp",
+        [isRead,token,token]
+      );
+
+      if (!data[0]) {
+        return res.status(404).json({ message: "No item found" });
+      }
+      res.status(200).json(data[0]);
+    } catch (error) {
+      res.status(500).json({ message: "Error retrieving the user profile" });
+    }
+  }
+);
 // server.js
 
-const multer = require("multer");
-const fs = require("fs");
+// const multer = require("multer");
 
-// Create a multer storage to store uploaded images
-const storage = multer.memoryStorage();
+
+// Set up storage for multer
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "./images/"); // Save files to the 'uploads' directory
+  },
+  filename: function (req, file, cb) {
+    cb(
+      null,
+      file.fieldname + "-" + Date.now() + path.extname(file.originalname)
+    );
+  },
+});
+
 const upload = multer({ storage: storage });
 
-app.post("/upload", upload.single("image"), (req, res) => {
+// Define a route for file upload
+app.post("/upload", upload.array("file", 4), async (req, res) => {
   try {
-    const imageBuffer = req.file.buffer;
-    const imageName = req.file.originalname;
+    const postId = req.body.postId;
+    const file = req.files;
+    // Access uploaded file information
+    const insertPromises = file.map(async (file) => {
+      return await pool.query("INSERT INTO post_images (post_id,image_filename) VALUES (?,?)", [
+        postId,
+        file.filename,
+      ]);
+    });
+    console.log(insertPromises);
 
-    // Insert image data into the database
-    pool.query(
-      "INSERT INTO images (name, data) VALUES (?, ?)",
-      [imageName, imageBuffer],
-      (err, result) => {
-        if (err) {
-          console.error(err);
-          res.status(500).json({ message: "Internal Server Error" });
-        } else {
-          res.json({ message: "Image uploaded successfully" });
-        }
-      }
-    );
+    const result = await Promise.all(insertPromises);
+
+    // Check if the insertion was successful
+    if (result.affectedRows === 1) {
+      res
+        .status(200)
+        .json({
+          message: "File uploaded successfully",
+          filename: file.filename,
+        });
+    } else {
+      res.status(500).json({ message: "Failed to insert into the database" });
+    }
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
+
+// app.post("/postItem/:userId",authenticateToken, upload.array("image", 4), async (req, res) => {
+//   try {
+//     const decodedToken = req.user;
+//     const userId = decodedToken.userId;
+
+//     const {
+//       name,
+//       categories,
+//       condition,
+//       storage,
+//       ram,
+//       color,
+//       sim,
+//       processor,
+//       description,
+//       price,
+//     } = req.body;
+
+//     // Check for required fields
+//     if (
+//       !name ||
+//       !categories ||
+//       !condition ||
+//       !storage ||
+//       !processor ||
+//       !color ||
+//       !ram ||
+//       !sim ||
+//       !description ||
+//       !price
+//     ) {
+//       return res.status(400).json({ error: "Required fields are not filled" });
+//     }
+// console.log("files",req.files)
+//     // Check if req.files is defined and is an array
+//     if (!req.files || !Array.isArray(req.files)) {
+//       return res.status(400).json({ error: "No files provided" });
+//     }
+
+//     // Insert into posts table
+//     const postQuery =
+//       "INSERT INTO `posts`(`userId`,`Category`, `ItemName`, `Condition`, `Storage`, `Ram`, `Sim`, `Description`, `Processor`, `Color`,`Price`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+//     const postResult = await pool.query(postQuery, [
+//       userId,
+//       categories,
+//       name,
+//       condition,
+//       storage,
+//       ram,
+//       sim,
+//       description,
+//       processor,
+//       color,
+//       price,
+//     ]);
+
+//     const postId = postResult.insertId;
+// console.log("postid",postId)
+//     // Insert into post_images table
+//     const fileInsertPromises = req.files.map(async (file) => {
+//       await pool.query(
+//         "INSERT INTO post_images (post_id, image_filename) VALUES (?, ?)",
+//         [postId, file.filename]
+//       );
+//     });
+//     console.log(fileInsertPromises)
+//     // Wait for all file insertions to complete
+//     await Promise.all(fileInsertPromises);
+
+//     // Check if the insertion was successful
+//     if (result.affectedRows === 1) {
+//       res.status(200).json({
+//         message: "Item and files uploaded successfully",
+//         postId,
+//       });
+//     } else {
+//       res.status(500).json({ message: "Failed to insert into the database" });
+//     }
+//   } catch (error) {
+//     console.error("Error uploading item:", error);
+//     res.status(500).json({ error: "Error uploading item" });
+//   }
+// });
+
 
 app.get("/postedItems/:token", authenticateToken, async (req, res) => {
   try {
@@ -703,5 +932,79 @@ app.get("/deletedItems/:token", authenticateToken, async (req, res) => {
     res.status(200).json({ data });
   } catch (error) {
     res.status(500).json({ message: "Error retrieving the user profile" });
+  }
+}); // Import your MySQL pool instance
+
+
+app.post("/postItemss/:userId", authenticateToken, upload.array("file", 4), async (req, res) => {
+  const decodedToken = req.user;
+  const token = decodedToken.userId;
+  console.log("boddyyyyy", token);
+  const conn = await mysqlq.createConnection({
+    host: "127.0.0.1",
+    user: "root",
+    password: "",
+    database: "mtdb",
+  });
+  try {
+    const {
+      name,
+      categories,
+      storage,
+      color,
+      condition,
+      sim,
+      ram,
+      processor,
+      description,
+      price,
+    } = req.body;
+
+    // Access uploaded file information
+    const files = req.files || [];
+    
+    // Execute the query to insert text information
+    const post = `INSERT INTO posts (userId, Category, ItemName, Storage, Color, \`Condition\`, Sim, Ram, Processor, Description, Price)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+     const [inset] = await conn.query(post,[
+        token,
+        categories,
+        name,
+        storage,
+        color,
+        condition,
+        sim,
+        ram,
+        processor,
+        description,
+        price,
+      ]);
+    
+      const postId = inset.insertId;
+      console.log("post_Id")
+    // Execute the query to insert file information
+    const insertFilePromises = files.map(async (file) => {
+      try {
+        const result = await pool.query(
+          "INSERT INTO post_images (image_filename, post_id) VALUES (?, ?)",
+          [file.filename,postId]
+        );
+
+        // Check if the insertion was successful
+        if (result.affectedRows !== 1) {
+          throw new Error("Failed to insert file into the database");
+        }
+      } catch (error) {
+        console.error(error);
+        throw new Error("Failed to insert file into the database");
+      }
+    });
+
+    await Promise.all(insertFilePromises);
+
+    res.status(201).json({ message: "Item posted successfully" });
+  } catch (error) {
+    console.error("Error during item posting:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });

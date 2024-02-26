@@ -24,7 +24,9 @@ import {
   GestureHandlerRootView,
   TouchableOpacity,
 } from "react-native-gesture-handler";
-
+  import * as Notifications from 'expo-notifications';
+import { Alert } from "react-native";
+  
 const Harry = () => {
   const [rowData, setRowData] = useState([]);
   const navigation: any = useNavigation();
@@ -36,17 +38,28 @@ const Harry = () => {
   const [loading, setLoading] = useState(true);
 
   const apiUrl = process.env.EXPO_PUBLIC_API_URL;
-
-  const logout = () => {
-    clearAuthToken();
-  };
-
-  const clearAuthToken = async () => {
-    await AsyncStorage.removeItem("authToken");
-    console.log("auth token cleared");
-    navigation.replace("Login");
-  };
-
+  useEffect(() => {
+    (async () => {
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (status !== 'granted') {
+        alert('You need to enable permissions for notifications.');
+      }
+    })();
+  }, []);
+  useEffect(() => {
+    const subscription = Notifications.addNotificationReceivedListener(
+      (notification) => {
+        console.log(notification);
+        Alert.alert("New Notification", JSON.stringify(notification));
+        // Handle the notification here
+      }
+    );
+  
+    return () => {
+      subscription.remove();
+    };
+  }, [filteredData]);
+  
   useEffect(() => {
     // Fetch data when the component mounts
     fetchData();
@@ -59,10 +72,10 @@ const Harry = () => {
 
   const fetchData = async () => {
     try {
-      const response = await axios.get(`${apiUrl}/items`);
+      const response = await axios.get(`${apiUrl}/itemsPost`);
       setRowData(response.data);
       setLoading(false);
-      setRefreshing(false); // Stop refreshing
+      setRefreshing(false);
     } catch (error) {
       console.log(error);
       setLoading(false);
@@ -106,49 +119,54 @@ const Harry = () => {
     fetchData();
   };
   const handleView = async (item: {
-    ID: any;
+    post_id: any;
     userId: any;
     View: any;
     Price: any;
-    Name: any;
+    ItemName: any;
     Condition: any;
     Storage: any;
     Sim: any;
     Ram: any;
     Description: any;
+    Processor:any;
     Color: any;
+    image_filename:any;
   }) => {
-    const postId = item?.ID;
-    try{
-    const response = await axios.put(`${apiUrl}/updateView/${postId}`, {
-      view: item?.View,
-    })
-    if (response.data.success){
-
-    navigation.navigate(
-      "Detail",
-      {
-        itemId: item.ID,
-        userId: item.userId,
-        price: item.Price,
-        name: item.Name,
-        condition: item.Condition,
-        storage: item.Storage,
-        sim: item.Sim,
-        ram: item.Ram,
-        description: item.Description,
-        color: item.Color,
-        view: item.View,
-        item: item,
-      },
-      {}
-      );
+    const postId = item?.post_id;
+    const view = item?.View;
+    try {
+      const response = await axios.put(`${apiUrl}/updateView/${postId}`, {
+        view: view,
+      });
+      if (response.data.success) {
+        navigation.navigate(
+          "Detail",
+          {
+            itemId: item.post_id,
+            userId: item.userId,
+            price: item.Price,
+            name: item.ItemName,
+            condition: item.Condition,
+            storage: item.Storage,
+            sim: item.Sim,
+            ram: item.Ram,
+            description: item.Description,
+            color: item.Color,
+            view: item.View,
+            processor: item.Processor,
+            image_filename:item.image_filename,
+            item: item,
+          },
+          {}
+        );
+      }
+    } catch (error) {
+      // Handle error, log or show an alert
+      console.error("Error updating view:", error);
     }
-  } catch (error) {
-    // Handle error, log or show an alert
-    console.error("Error updating view:", error);
-  }
   };
+  
   return (
     <GestureHandlerRootView>
       <ImageBackground
@@ -245,18 +263,22 @@ const Harry = () => {
                     </Pressable>
                   ))
                 : rowData.map((item) => (
-                    <Pressable
-                      key={item.ID}
-                      onPress={() =>handleView(item)
-                         
-                      }
-                    >
+                    <Pressable key={item.ID} onPress={() => handleView(item)}>
                       <View style={styles.item}>
-                        <Image
-                          style={styles.itemsImage}
-                          resizeMode="cover"
-                          source={require("../assets/622166.jpg")}
-                        />
+                        {item.image_filename ? (
+                          <Image
+                            style={styles.itemsImage}
+                            resizeMode="cover"
+                            source={{ uri: `${apiUrl}/images/${item.image_filename}` }}
+                            onError={(error) => console.error("Image loading error:", error)}
+                          />
+                        ) : (
+                          <Image
+                            style={styles.itemsImage}
+                            resizeMode="cover"
+                            source={require("../assets/622166.jpg")} // Default image or placeholder
+                          />
+                        )}
                         <View style={styles.itemBottom}>
                           <Text
                             style={{ ...styles.itemText, fontWeight: "900" }}
@@ -268,8 +290,7 @@ const Harry = () => {
                       </View>
                     </Pressable>
                   ))}
-                      <View style={styles.itemL}>
-                      </View>
+              <View style={styles.itemL}></View>
             </View>
           )}
           {conLost ? (
@@ -377,7 +398,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4, // Shadow radius
     elevation: 2, // Android-specific: controls the appearance of the shadow
   },
-  itemL:{
+  itemL: {
     width: wp(35),
     height: hp(25),
     // backgroundColor: "#fff",

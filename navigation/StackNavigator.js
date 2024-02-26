@@ -22,6 +22,7 @@ import {
   MaterialCommunityIcons,
 } from "@expo/vector-icons";
 import AddItems from "../app/screens/AddItems";
+import Add from "../app/screens/Add";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import StackNavigation, { StackNavigationq } from "./StackNavigation";
 import { UserContext, UserType } from "../UserContext";
@@ -35,6 +36,7 @@ import Categories from "../app/components/Categories";
 import Brand from "../app/components/Brand";
 import PostEdit from "../app/screens/PostEdit";
 import DeletedPost from "../app/screens/DeletedPost";
+import Nottify from "../app/screens/Nottify";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -75,7 +77,7 @@ function TabNavigation() {
 
       <Tab.Screen
         name="Order"
-        component={Order}
+        component={Nottify}
         options={{
           tabBarLabel: "Order",
           headerShown: false,
